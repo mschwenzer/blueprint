@@ -1,5 +1,5 @@
 load.and.recode <-
-function(df)
+function(df,filter)
                           {
                                         #                         cat('recs:\n')
                                         #                          print(recs)
@@ -14,7 +14,7 @@ paste0(df$vars[rep.pos],' %>% ',df$rec[rep.pos]) -> df$vars[rep.pos]
 
 
                               # create a string that renames/selects with select and mutates afterwards
-                              paste0('import("',df$files[1],'") %>% transmute(',transmute.code,')') -> eval.code
+                              paste0('import("',df$files[1],'")',if(filter){paste0(' %>% transmute(',transmute.code,')')}) -> eval.code
                               eval.code
                                         # execute and return
 #                              print(eval.code)

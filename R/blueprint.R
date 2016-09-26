@@ -6,10 +6,14 @@ expect_equal(1,1)
 return(NULL)
     }
 
+
+
+
 blueprint <- function(blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
                       out_file=NULL,
-                      waves=1,
-                      debug=FALSE,
+                      waves=NULL,
+                      debug=0,
+                      filter=TRUE,
                       ...
     ){
    # requirements  
@@ -21,6 +25,7 @@ blueprint <- function(blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa
     cat('Parsing file: ',blueprint,'\n')
     vars <- import(file=blueprint,...)
     vars %>% blueprint.validator
+    if(debug){print(vars)}
  #  names(vars)
   #was :
                                         #vars <- read.csv(a.file,sep=';')
@@ -84,7 +89,7 @@ vars[,1]  -> all.vars
   ## check for duplicate variable names and stop -----------------------------------------------------------
 
   if(sum(duplicated(vars[,1]))>0){
-      stop(paste('Duplicate variablenames:',vars[which(duplicated(vars[,1]))[1],1]))}
+      stop(paste('Duplicate variablenames:',vars[which(duplicated(vars[,1]))[1],1]),' rows:',paste0(which(duplicated(vars[,1])),collapse=','))}
                                           #  print(varsnam)
   
   
@@ -132,7 +137,7 @@ ldply(
                           (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
 #df <- current.wave[pos.main.file,]
 
-                          current.wave[pos.main.file,] %>% load.and.recode -> current.data
+                          current.wave[pos.main.file,] %>% load.and.recode(filter) -> current.data
 
                           current.wave <- current.wave[ !current.wave[,'files'] == current.wave.main.file & current.wave[,'files']!='',]
 ### restrict to variables that are specified by a file reference ❗️ should be: also a link
@@ -189,7 +194,7 @@ ldply(
                                   rbind(add.current.wave                           ,data.frame(newvars=to.links,vars=to.links,files=rep_len(NA,length(to.links)),links=rep_len(NA,length(to.links)),rec=rep_len(NA,length(to.links)))) -> add.current.wave
 
 
-                                  add.current.wave %>% load.and.recode  -> data.add
+                                  add.current.wave %>% load.and.recode(filter)  -> data.add
 
 #                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
                                   paste0('left_join(current.data,data.add,by=c(',link.condition,'))') -> code.to.execute

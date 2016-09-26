@@ -1,9 +1,14 @@
 Package: blueprint
 Type: Package
 Title: Blueprint
-Version: 0.9beta
+Version: 0.9
 Date: 2016-09-26
 Author: Marc Schwenzer
 Maintainer: Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
-Description: The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intutitive way by using a meta-data file (a "blueprint") that can be easily edited with a choosen Spreadsheet application or text editor that can e.g. save the file formats OpenOffice Calc, Excel, CSV, HTML. 
-License: GPL-2 | GPL-3
+Description: The R-package blueprint offers the opportunity to select, combine
+    and transform data in an easy and intutitive way by using a meta-data file (a
+    "blueprint") that can be easily edited with a choosen Spreadsheet application
+    or text editor that can e.g. save the file formats OpenOffice Calc, Excel, CSV,
+    HTML.
+License: GPL (>= 2)
+RoxygenNote: 5.0.1
