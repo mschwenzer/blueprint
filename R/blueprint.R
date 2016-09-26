@@ -1,44 +1,27 @@
 constant <- function(x,y){y}
+blueprint.validator <- function(blueprint)
+{
+    require(testthat)
+expect_equal(1,1)
+return(NULL)
+    }
 
-
-                          load.and.recode <- function(df)
-                          {
-                                        #                         cat('recs:\n')
-                                        #                          print(recs)
-                              # find non-empty filter (rec) columns  / ❗️ replace by str_match / find out why it can be string "NA" which is a bug
-                              ((df$rec!='')&(df$rec!='NA')&(!is.na(df$rec))&(!is.nan(df$rec)))  %>% which -> rep.pos
-                              print(rep.pos)
-paste0(df$vars[rep.pos],' %>% ',df$rec[rep.pos]) -> df$vars[rep.pos]
-                              paste0(df$newvars,'=',df$vars,collapse=',')  -> transmute.code
-
-
-
-
-
-                              # create a string that renames/selects with select and mutates afterwards
-                              paste0('import("',df$files[1],'") %>% transmute(',transmute.code,')') -> eval.code
-                              eval.code
-                                        # execute and return
-#                              print(eval.code)
-                              eval(parse(text=eval.code))
-                          }
-
-                                        # Todo: recod commands for main file and check the recod in replace.vars.from.file...
-blueprint <- function(
-    blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
-    sheet=1,
-    waves=1,
-    debug=FALSE
+blueprint <- function(blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
+                      out_file=NULL,
+                      waves=1,
+                      debug=FALSE,
+                      ...
     ){
    # requirements  
-  require(plyr)
-  require(gdata)
-  require(stringr)  
-  require(rio)
+    require(plyr)
+    require(gdata)
+    require(stringr)  
+    require(rio)
                                         # Load Merge Data from XLS
-  cat('Parsing file: ',blueprint,'\n')  
-  vars <- read.xls(xls=blueprint,sheet = sheet)
-#  names(vars)
+    cat('Parsing file: ',blueprint,'\n')
+    vars <- import(file=blueprint,...)
+    vars %>% blueprint.validator
+ #  names(vars)
   #was :
                                         #vars <- read.csv(a.file,sep=';')
                                         # check files
@@ -46,7 +29,7 @@ blueprint <- function(
     ## Remove comment rows -----------------------------------------------------------
   vars[,1] %>% str_detect('^#.*')  %>% which->   commentrows
   if (length(commentrows)>0){    vars[-commentrows,]  -> vars   }
-
+    
     ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
   rowstoprocess <- vars[,1]
   while(length(
@@ -67,8 +50,8 @@ pattern <- regmatches(to.process.vars[,1],regexpr('\\[[0-9]*:[0-9]*\\]',to.proce
 nums <- eval(parse(
     text=(pattern %>% str_replace_all('\\[','') %>% str_replace_all('\\]',''))
                    )
-             )
-pattern %>% str_replace_all('\\[','\\\\[') %>% str_replace_all('\\]','\\\\]')  -> pattern
+    )
+              pattern %>% str_replace_all('\\[','\\\\[') %>% str_replace_all('\\]','\\\\]')  -> pattern
 if(debug){          print(pattern)}
           frame.toadd <- ldply(nums,
                                function(x){
@@ -76,7 +59,6 @@ if(debug){          print(pattern)}
                 })
                names(frame.toadd) <- names(frame.before)
              assign('vars',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(vars)+1)){frame.after}),-1)
-
           }
   return.not.existing.files <- function(df)
       {
@@ -85,6 +67,7 @@ if(debug){          print(pattern)}
           llply(files.to.check,file.exists) %>% unlist %>% `!` %>% files.to.check[.]
       }
     vars %>% return.not.existing.files  -> not.existing.files
+    # remove empty fields
         (not.existing.files=='') %>% which -> apos
     not.existing.files[-apos]  -> not.existing.files
   if(length(not.existing.files)>0){
@@ -240,11 +223,7 @@ ldply(
                           wave <<- wave+1
                           eval(parse(text=code.to.execute))
                           return(current.data)
-                      })    -> data
+                      })  %>% as_data_frame   -> data
+    if(is.character(out_file)){export(data,file=out_file)}
     return(data)
 }
-
-
-#pisa <- merge.data('/doc/wissenschaft/data/pisa/pisar/pisa.xlsx',waves=5,sheet=)
-#merge.data('/doc/wissenschaft/data/pisa/pisar/pisavariables.csv',2)
-#pisa <- merge.data('/doc/wissenschaft/data/pisa/pisar/pisa.xlsx',waves=1,sheet='SCRmergestructure')
