@@ -1,0 +1,250 @@
+constant <- function(x,y){y}
+
+
+                          load.and.recode <- function(df)
+                          {
+                                        #                         cat('recs:\n')
+                                        #                          print(recs)
+                              # find non-empty filter (rec) columns  / ❗️ replace by str_match / find out why it can be string "NA" which is a bug
+                              ((df$rec!='')&(df$rec!='NA')&(!is.na(df$rec))&(!is.nan(df$rec)))  %>% which -> rep.pos
+                              print(rep.pos)
+paste0(df$vars[rep.pos],' %>% ',df$rec[rep.pos]) -> df$vars[rep.pos]
+                              paste0(df$newvars,'=',df$vars,collapse=',')  -> transmute.code
+
+
+
+
+
+                              # create a string that renames/selects with select and mutates afterwards
+                              paste0('import("',df$files[1],'") %>% transmute(',transmute.code,')') -> eval.code
+                              eval.code
+                                        # execute and return
+#                              print(eval.code)
+                              eval(parse(text=eval.code))
+                          }
+
+                                        # Todo: recod commands for main file and check the recod in replace.vars.from.file...
+blueprint <- function(
+    blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
+    sheet=1,
+    waves=1,
+    debug=FALSE
+    ){
+   # requirements  
+  require(plyr)
+  require(gdata)
+  require(stringr)  
+  require(rio)
+                                        # Load Merge Data from XLS
+  cat('Parsing file: ',blueprint,'\n')  
+  vars <- read.xls(xls=blueprint,sheet = sheet)
+#  names(vars)
+  #was :
+                                        #vars <- read.csv(a.file,sep=';')
+                                        # check files
+  
+    ## Remove comment rows -----------------------------------------------------------
+  vars[,1] %>% str_detect('^#.*')  %>% which->   commentrows
+  if (length(commentrows)>0){    vars[-commentrows,]  -> vars   }
+
+    ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
+  rowstoprocess <- vars[,1]
+  while(length(
+((vars[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+        >0))
+          {
+              rowid <- ((vars[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+              if((rowid-1)>0){
+                  frame.before <- vars[1:(rowid-1),]
+              }
+              if((rowid+1)<(nrow(vars)+1))
+                  {
+                      frame.after <- vars[(rowid+1):nrow(vars),]
+                  }
+              to.process.vars <- vars[rowid,]
+## ❗️ to change
+pattern <- regmatches(to.process.vars[,1],regexpr('\\[[0-9]*:[0-9]*\\]',to.process.vars[,1]))
+nums <- eval(parse(
+    text=(pattern %>% str_replace_all('\\[','') %>% str_replace_all('\\]',''))
+                   )
+             )
+pattern %>% str_replace_all('\\[','\\\\[') %>% str_replace_all('\\]','\\\\]')  -> pattern
+if(debug){          print(pattern)}
+          frame.toadd <- ldply(nums,
+                               function(x){
+                                   to.process.vars %>% str_replace_all(pattern,x)
+                })
+               names(frame.toadd) <- names(frame.before)
+             assign('vars',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(vars)+1)){frame.after}),-1)
+
+          }
+  return.not.existing.files <- function(df)
+      {
+          vars %>% names %>% str_detect('file') -> filevarpos
+          vars[,filevarpos] %>% unlist %>% c %>% unique  -> files.to.check
+          llply(files.to.check,file.exists) %>% unlist %>% `!` %>% files.to.check[.]
+      }
+    vars %>% return.not.existing.files  -> not.existing.files
+        (not.existing.files=='') %>% which -> apos
+    not.existing.files[-apos]  -> not.existing.files
+  if(length(not.existing.files)>0){
+          paste0('The following files do not exist:\n',paste0(not.existing.files,sep='\n')) -> warn.mess
+          stop(warn.mess)
+      }
+
+  cat('Building data.frame for variables (newnames):\n')
+vars[,1]  -> all.vars
+
+#rowstoprocess
+  #row names of all variables
+    varsnam <- names(vars)
+  ## check for duplicate variable names and stop -----------------------------------------------------------
+
+  if(sum(duplicated(vars[,1]))>0){
+      stop(paste('Duplicate variablenames:',vars[which(duplicated(vars[,1]))[1],1]))}
+                                          #  print(varsnam)
+  
+  
+  wave <- 1
+  #add additional years
+  
+                                        #yea
+names(vars)[  seq(2,by=4,length=waves)] %>%
+    str_replace_all('X','') %>%
+    as.numeric -> years
+  #print(years)
+  
+
+  vars <- do.call(data.frame,llply(vars,function(x){
+        #Just add missing to empty strings / make empty cells NA
+    is.na(x) <- x %in% c('')
+    return(x)}))
+    names(vars) <- varsnam
+  #print(vars)
+  #print(vars)
+  #n waves
+#  print(waves)
+#vars  
+                                        # do for every wave (additional colums)
+    
+ldply(
+                       # first wave vars are in second column , every addtional wave is 4 columns right of this column
+                      2+(0:(waves-1))*4,
+                      function(wavecolumn){
+                                        # isolate a data.frame, that contains the variable identifier (col1) and the columns of the current wave
+                          current.wave <- vars[,c(1,wavecolumn:(wavecolumn+3))]
+                          names(current.wave) <- c('newvars','vars','files','links','rec')
+###
+                          cat(paste('Processing wave:',wave,'\n'))
+                                        # get different unique filenames to process for each wave
+                          current.wave.files <- unique(current.wave$files)
+                                        # main file has to be the first specified file
+                          current.wave.main.file <- current.wave.files[1]
+                                        # vars in main file that shall be kept
+                          vars.to.get <- current.wave$vars
+                                        # print(vars.to.get)
+### Load main file ####################################################################################################
+                          cat('loading main file:',current.wave.main.file,'\n')
+                          current.wave$files %>% str_detect(current.wave.main.file)                          -> pos.main.file
+                          (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
+#df <- current.wave[pos.main.file,]
+
+                          current.wave[pos.main.file,] %>% load.and.recode -> current.data
+
+                          current.wave <- current.wave[ !current.wave[,'files'] == current.wave.main.file & current.wave[,'files']!='',]
+### restrict to variables that are specified by a file reference ❗️ should be: also a link
+                          current.wave <- current.wave[!is.na(current.wave$files),]
+
+### Add the additional files  ####################################################################################################
+                          if(length(current.wave$files)>0){
+                              for(x in unique(current.wave$files) )
+                              {
+                                  cat('adding variables from file:',x,'\n')
+
+                                        #x <- unique(current.wave$files)[1]
+                                        #print(current.wave)
+                                        # variabels to replace in original frame
+
+                                      add.current.wave <- current.wave[current.wave$files==x,]
+                                      
+#                                      new.vars <- ,'newvars']
+                                        # variables that replace in replacement frame
+                                      the.vars <- add.current.wave[,'vars']
+                                        #print(the.vars)##
+                                      links <-add.current.wave[,'links']
+                                        #print(current.wave)
+                                      recs <-add.current.wave[,'rec']
+                                        #print(recs)
+                                        #print(links)##
+                                      if(sum(is.na(links)&!is.na(the.vars))>0)
+                                          {
+                                              stop(paste('You hav;;e to specify links for the variables\n',paste(the.vars,collapse=',')))
+                                          }
+      
+                                      from.links <- strsplit(links,';')[[1]][1]
+                                      ifelse (length(strsplit(links,';')[[1]])>1,            to.links <- strsplit(links,';')[[1]][2],to.links <- from.links)
+                                      from.links <-  strsplit(from.links,',')[[1]]
+                                        # DEBUG> print(from.links)
+                                      to.links <-  strsplit(to.links,',')[[1]]
+
+                                        #print(to.links)
+                                        #print(the.vars)
+                                        #print(head(data))
+                                        #         print(head(replace.vars.from.file(data,rep.file=x,
+                                        #                                           orig.vars=the.vars,
+                                        #                                           rep.vars=the.vars,
+                                        #                                           orig.id=from.links,rep.id=to.links)))
+                                        # DEBUG  
+                                        #print('here')
+                                        #
+                                      
+#### merge the data
+                                  paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
+                                  link.condition
+                                  add.current.wave
+
+                                  rbind(add.current.wave                           ,data.frame(newvars=to.links,vars=to.links,files=rep_len(NA,length(to.links)),links=rep_len(NA,length(to.links)),rec=rep_len(NA,length(to.links)))) -> add.current.wave
+
+
+                                  add.current.wave %>% load.and.recode  -> data.add
+
+#                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
+                                  paste0('left_join(current.data,data.add,by=c(',link.condition,'))') -> code.to.execute
+                                  eval(parse(text=code.to.execute))  -> current.data
+                                      ## codestoexecute <- which(current.wave$file==x&(grepl('`',current.wave$vars,perl=TRUE)))
+                                      ## for(a.row in codestoexecute)
+                                      ##     {
+                                      ##         print(paste('data','$',vars[a.row,1],' <- ', gsub('`','',current.wave$vars[a.row]),sep=''))
+                                      ##         eval(parse(text=paste('data','$',vars[a.row,1],' <- ', gsub('`','',current.wave$vars[a.row]),sep='')))
+                                      ##     }
+                                        #print(head(data))
+                                      
+                                  }}
+                                        # what is done here?
+                                        #   print(vars[,1])
+                                        #nv <- length(vars[,1])
+                                        #names(data)[c(1:(nv))] <- vars[,1]
+                                        #names(data)[length(names(data))] <- 'year'
+                          ## Reocde data over here -----------------------------------------------------------
+
+                                        #                                                    vars.to.get
+                          ## Execute the code from the code -----------------------------------------------------------
+
+                          ## Add wave specifier -----------------------------------------------------------
+
+                          cat('####################################################################################################\n')
+                          all.vars%in%names(current.data) %>% `!`  -> posis
+                          all.vars -> all.vars.new
+                          all.vars.new[posis]  %>% str_replace('$','=rep_len(NA_real_,nrow(current.data))') -> all.vars.new[posis]
+                          all.vars.new %>% paste0(collapse=',') %>%                               paste0('current.data %>% transmute(',.,',wave=',wave,') ->current.data ')                      -> code.to.execute
+                          wave <<- wave+1
+                          eval(parse(text=code.to.execute))
+                          return(current.data)
+                      })    -> data
+    return(data)
+}
+
+
+#pisa <- merge.data('/doc/wissenschaft/data/pisa/pisar/pisa.xlsx',waves=5,sheet=)
+#merge.data('/doc/wissenschaft/data/pisa/pisar/pisavariables.csv',2)
+#pisa <- merge.data('/doc/wissenschaft/data/pisa/pisar/pisa.xlsx',waves=1,sheet='SCRmergestructure')

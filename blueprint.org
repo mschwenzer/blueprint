@@ -1,0 +1,30 @@
+#+TITLE: Using blueprint to form combined datasets.
+#+OPTIONS:    
+* Blueprint
+Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intutitive way by using a meta-data file (a "blueprint") that can be easily edited with a choosen Spreadsheet application or text editor that can e.g. save the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. Blueprints define which variables from files are imported and (left) joins variables from other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile rio-package it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Evey variable can be transformed by functions or chains of functions that can be imagined as pipes or filters. Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes more versatile, clearer and more easy expandible. The workhors-functions for merging and shaping of data mainly relies on functions from the brilliant and comparable fast package dplyr (🔴CITE). 
+* Structure of blueprint files
+\tiny \begin{tt}
+|-----------------------+-----------+-----------------+------------+-----------------------------------------+-----------+-----------------+------------+-----------------|
+| newvar                | orig.var1 | orig.file1      | orig.link1 | orig.tranform1                          | orig.var2 | orig.file2      | orig.link2 | orig.transform2 |
+|-----------------------+-----------+-----------------+------------+-----------------------------------------+-----------+-----------------+------------+-----------------|
+| # Comments start with | #         |                 |            |                                         |           |                 |            |                 |
+| #MAINFILE             |           |                 |            |                                         |           |                 |            |                 |
+| country               | cntry     | ESS1e06.4.Rdata |            |                                         |           | ESS2e03.4.Rdata |            |                 |
+| idno                  | idno      | ESS1e06.4.Rdata |            | recode(1=1)                             |           | ESS2e03.4.Rdata |            |                 |
+| year                  | '2002a'   | ESS1e06.4.Rdata |            |                                         |           |                 |            |                 |
+| essround              | essround  | ESS1e06.4.Rdata |            |                                         |           | ESS2e03.4.Rdata |            |                 |
+| edition               | edition   | ESS1e06.4.Rdata |            |                                         |           | ESS2e03.4.Rdata |            |                 |
+| date                  | proddate  | ESS1e06.4.Rdata |            |                                         |           | ESS2e03.4.Rdata |            |                 |
+| gender                | gndr      | ESS1e06.4.Rdata |            | recode_ factor(`1`='female',`2`='male') |           | ESS2e03.4.Rdata |            |                 |
+| female                | gender    |                 |            |                                         |           |                 |            |                 |
+| birth                 | yrbrn     | ESS1e06.4.Rdata |            |                                         |           | ESS2e03.4.Rdata |            |                 |
+| #ADDITIONAL FILES     |           |                 |            |                                         |           |                 |            |                 |
+|-----------------------+-----------+-----------------+------------+-----------------------------------------+-----------+-----------------+------------+-----------------|
+\end{tt}\normalsize 
+Figure XXX shows a typical blueprint file. Note that file here means the structure of the data (position of columns and rows) while this could be a comma seperated text file, the coluns of a Excel (.xlsx) or a Openoffice Spreadsheet-File (.ods) 
+Every row represents an unique variable name that can be chosen according to the needs of the analysis that is specified in column one (here: newvar).
+In longitudinal surveys such variables are typically measured repeated across time. 
+* Import from Excel
+
+Excel has a special treatment of characters. To assign fixed variables to a file you either use the integer specification for numbers (2000L for the number 2000) or you assign characters by using two Apostrophe before and one apostrophe after the string:
+>> ''STRING'
