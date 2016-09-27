@@ -10,14 +10,11 @@ blueprint.log        (paste0('----Transformation. Variable `',name,'`  (wave ',w
     llply(kept.levels.of.variable,function(x){str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
     eval(parse(text=paste0('variable %>% ',funs)))  -> variable
     class(variable) -> new.type
-    data.frame(old=kept.levels.of.variable,`. `=rep('->',length(kept.levels.of.variable)),new=variable[old.pos]) %>% arrange(old)  ->     printfr
-    paste0('(',old.count,')')  -> row.names.a
-    row.names.a %>% duplicated %>% which  -> pos.row.names
-    row.names.a[pos.row.names] <- paste0(row.names.a,1:length(pos.row.names))
-    rownames(printfr) <- row.names.a
-    printfr %>% as.matrix %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log
+    data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% arrange(old)  ->     printfr
+    
+capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla
                             if(new.type!=old.type){
-                                blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Intentionally'))
+                                blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Was this intended?'))
                             }
     blueprint.log('')
     blueprint.log('')    
@@ -34,7 +31,7 @@ set.empty.values.to.NA <- function(blueprint)
 ## add.variables.specified.by.brackets -----------------------------------------------------------
 add.variables.specified.by.brackets <- function(blueprint)
 {
-        ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
+    ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
   rowstoprocess <- blueprint[,1]
   while(length(
 ((blueprint[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
@@ -56,7 +53,6 @@ nums <- eval(parse(
                    )
     )
               pattern %>% str_replace_all('\\[','\\\\[') %>% str_replace_all('\\]','\\\\]')  -> pattern
-if(debug){          print(pattern)}
           frame.toadd <- ldply(nums,
                                function(x){
                                    to.process.vars %>% str_replace_all(pattern,x)
@@ -166,6 +162,7 @@ blueprint <- function(
     require(logging)    
                                         # Load Merge Data from XLS
     cat('Parsing file: ',blueprint,'\n')
+    if(debug){cat(paste0('file: ',blueprint))}
     if(!logfile)
         {
             str_replace(blueprint,'\\.....+$','.log.txt') -> logfile
@@ -179,13 +176,16 @@ blueprint <- function(
     if(debug){print('logger created')}
     import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
         blueprint.set.standard.names  -> blueprint
-    # cut blueprint into waves
+    if(debug){print(blueprint)}
+                                        # cut blueprint into waves
+
+
     data.frame(startcol=(names(blueprint)=='var') %>% which,
                # end column 
                endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                         # + the last column containing everything
                         length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)    %>%
-        filter(wave==c(waves)) %>% 
+        filter(wave%in%c(waves)) %>%
         group_by(wave)   %>% 
         do(blueprints={blueprint[,c(1,(.$startcol):(.$endcol))]  %>%
                                         # normalise to a data.frame with these variables
@@ -193,6 +193,7 @@ blueprint <- function(
                       add.variables.specified.by.brackets %>%
                       set.empty.values.to.NA  %>%
                       blueprint.validator})             -> blueprints
+    if(debug){print(bluepring)}
     rm(blueprint)
 ## Validate all blueprints before something is done actually....     -----------------------------------------------------------q
                                         # validator for this kind of data.frame
@@ -231,14 +232,16 @@ if(debug)        {print(blueprint$wave                 )}
                           if(length(blueprint$file)>0){
                               for(x in unique(blueprint$file) )
                               {
-                                  cat('adding variables from file:',x,'\n')
+                                  ##:ess-bp-start::browser@nil:##
+browser(expr=is.null(.ESSBP.[["@47@"]]));##:ess-bp-end:##
+                                  blueprint.log(paste0('--- Adding additional variables from file:',x,'\n'))
                                   
 
                                         #x <- unique(blueprint$files)[1]
                                         #print(blueprint)
                                         # variabels to replace in original frame
 
-                                      add.blueprint <- blueprint[blueprint$files==x,]
+                                      add.blueprint <- blueprint[blueprint$file==x,]
                                       
 #                                      new.vars <- ,'newvars']
                                         # variables that replace in replacement frame
@@ -267,7 +270,7 @@ if(debug)        {print(blueprint$wave                 )}
                                   add.blueprint %>% load.and.recode(fun=fun,wave=wave,logging=logging)  -> data.add
 
 #                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
-                                  paste0('left_join(main,data.add,by=c(',link.condition,'))') -> code.to.execute
+                                  paste0('left_join(main.data,data.add,by=c(',link.condition,'))') -> code.to.execute
                                   eval(parse(text=code.to.execute))  -> main.data
                                       ## codestoexecute <- which(blueprint$file==x&(grepl('`',blueprint$vars,perl=TRUE)))
                                       ## for(a.row in codestoexecute)
@@ -316,5 +319,6 @@ if(debug)        {print(blueprint$wave                 )}
     }
     return(final.df )}
 
-blueprint(which='MergeESS',waves=1:7)  -> tes
-tes$edu.max
+blueprint(which='MergeESS',waves=1:3,loggin=FALSE)  -> tes
+blueprint(which='MergePisa',waves=1:2,logging=FALSE)  -> tes
+
