@@ -1,3 +1,31 @@
+
+blueprint.variable.diff <- function(variable,funs,name='',wave='')
+{
+    blueprint.log('')
+    blueprint.log('')    
+blueprint.log        (paste0('----Transformation. Variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
+    variable %>% duplicated %>% `!`  %>% which  -> old.pos
+    variable[old.pos] -> kept.levels.of.variable
+    class(variable) -> old.type
+    llply(kept.levels.of.variable,function(x){str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
+    eval(parse(text=paste0('variable %>% ',funs)))  -> variable
+    class(variable) -> new.type
+    data.frame(old=kept.levels.of.variable,`. `=rep('->',length(kept.levels.of.variable)),new=variable[old.pos]) %>% arrange(old)  ->     printfr
+    paste0('(',old.count,')')  -> row.names.a
+    row.names.a %>% duplicated %>% which  -> pos.row.names
+    row.names.a[pos.row.names] <- paste0(row.names.a,1:length(pos.row.names))
+    rownames(printfr) <- row.names.a
+    printfr %>% as.matrix %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log
+                            if(new.type!=old.type){
+                                blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Intentionally'))
+                            }
+    blueprint.log('')
+    blueprint.log('')    
+    blueprint.log('   >>> Distribution after recoding -----\n')                            
+    capture.output(x=print(Hmisc::describe.vector(variable)),file=NULL) %>% blueprint.log
+    return(variable)
+}
+
 ## make empty NA -----------------------------------------------------------
 set.empty.values.to.NA <- function(blueprint)
 {
@@ -54,9 +82,8 @@ blueprint.remove.column.rows <- function(blueprint)
                                                      }
 ## blueprint.log -----------------------------------------------------------
 blueprint.log <- function(message){
-    sink(blueprint.logfile,append=TRUE)
-    cat(message)
-    sink(null)
+
+    loginfo(message, logger="blueprint.logger")
 }
 ## return.df.with.certain.vars -----------------------------------------------------------
 return.df.with.certain.vars <- function(df,vars.to.get)
@@ -125,19 +152,31 @@ blueprint <- function(
                       out_file=NULL,
                       waves=NULL,
                       debug=FALSE,
+                      logfile=FALSE,                      
                       fun=TRUE,
+                      logging=TRUE,
                       ...
     ){
    # requirements  
     require(plyr)
+
     require(gdata)
     require(stringr)  
     require(rio)
+    require(logging)    
                                         # Load Merge Data from XLS
     cat('Parsing file: ',blueprint,'\n')
-    str_replace(blueprint,'\\.....+$','.log.txt') -> blueprint.logfile
-    print(blueprint.logfile)
-    if
+    if(!logfile)
+        {
+            str_replace(blueprint,'\\.....+$','.log.txt') -> logfile
+            }
+    if(logfile==blueprint)
+    {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argumet or change it.')}
+    blueprint.log.formatter <- function(record) {
+        text <- paste(paste0(' ',record$msg, sep=' '))
+        }
+    addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)
+    if(debug){print('logger created')}
     import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
         blueprint.set.standard.names  -> blueprint
     # cut blueprint into waves
@@ -146,7 +185,7 @@ blueprint <- function(
                endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                         # + the last column containing everything
                         length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)    %>%
-        filter(wave==waves) %>% 
+        filter(wave==c(waves)) %>% 
         group_by(wave)   %>% 
         do(blueprints={blueprint[,c(1,(.$startcol):(.$endcol))]  %>%
                                         # normalise to a data.frame with these variables
@@ -155,7 +194,6 @@ blueprint <- function(
                       set.empty.values.to.NA  %>%
                       blueprint.validator})             -> blueprints
     rm(blueprint)
-        print(blueprint.logfile)
 ## Validate all blueprints before something is done actually....     -----------------------------------------------------------q
                                         # validator for this kind of data.frame
     if(debug){print(blueprints) }
@@ -165,7 +203,7 @@ blueprint <- function(
         wave <- .$wave[[1]]
         all.vars <-.$blueprints[[1]]$newvar
          ###
-blueprint.log(paste('\n\nProcessing wave:',wave,'\n'))
+blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
                                         # get different unique filenames to process for each wave
                           blueprint.files <- unique(blueprint$file)
                                         # main file has to be the first specified file
@@ -181,7 +219,7 @@ blueprint.log(paste('\n\nProcessing wave:',wave,'\n'))
 #df <- blueprint[pos.main.file,]
 if(debug)        {print(blueprint$wave                 )}
                           blueprint[pos.main.file,] %>%
-                              load.and.recode(fun=fun) -> main.data
+                              load.and.recode(fun=fun,wave=wave,logging=logging) -> main.data
          
                                         # loaded and processed. remaining parts still to be processed
                           blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
@@ -226,7 +264,7 @@ if(debug)        {print(blueprint$wave                 )}
                                   rbind(add.blueprint                           ,data.frame(newvar=to.links,var=to.links,file=rep_len(NA,length(to.links)),link=rep_len(NA,length(to.links)),fun=rep_len(NA,length(to.links)))) -> add.blueprint
 
 
-                                  add.blueprint %>% load.and.recode(fun=fun)  -> data.add
+                                  add.blueprint %>% load.and.recode(fun=fun,wave=wave,logging=logging)  -> data.add
 
 #                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
                                   paste0('left_join(main,data.add,by=c(',link.condition,'))') -> code.to.execute
@@ -259,6 +297,7 @@ if(debug)        {print(blueprint$wave                 )}
                                         #    blueprints.data    %>% do.call(rbind,.$dfs) -> final.df
     blueprints.data$dfs  -> dfs
     dfs%>% do.call(rbind,.) %>% as_data_frame     -> final.df
+    blueprint.log(paste('Ready. Final data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
 
                                         #    b  cat('Building data.frame for variables (newnames):\n')
 #
@@ -272,7 +311,9 @@ if(debug)        {print(blueprint$wave                 )}
 
     ##                       }  %>% as_data_frame   -> data}})
     
-    if(is.character(out_file)){export(final.df,file=out_file)}
+    if(is.character(out_file)){export(final.df,file=out_file)
+        blueprint.log('Written data.frame to file',out_file,'.')
+    }
     return(final.df )}
 
 blueprint(which='MergeESS',waves=1:7)  -> tes
