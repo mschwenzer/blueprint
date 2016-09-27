@@ -54,7 +54,9 @@ blueprint.remove.column.rows <- function(blueprint)
                                                      }
 ## blueprint.log -----------------------------------------------------------
 blueprint.log <- function(message){
-    
+    sink(blueprint.logfile,append=TRUE)
+    cat(message)
+    sink(null)
 }
 ## return.df.with.certain.vars -----------------------------------------------------------
 return.df.with.certain.vars <- function(df,vars.to.get)
@@ -122,8 +124,8 @@ blueprint <- function(
                       blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
                       out_file=NULL,
                       waves=NULL,
-                      debug=0,
-                      filter=TRUE,
+                      debug=FALSE,
+                      fun=TRUE,
                       ...
     ){
    # requirements  
@@ -133,6 +135,9 @@ blueprint <- function(
     require(rio)
                                         # Load Merge Data from XLS
     cat('Parsing file: ',blueprint,'\n')
+    str_replace(blueprint,'\\.....+$','.log.txt') -> blueprint.logfile
+    print(blueprint.logfile)
+    if
     import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
         blueprint.set.standard.names  -> blueprint
     # cut blueprint into waves
@@ -150,16 +155,17 @@ blueprint <- function(
                       set.empty.values.to.NA  %>%
                       blueprint.validator})             -> blueprints
     rm(blueprint)
+        print(blueprint.logfile)
 ## Validate all blueprints before something is done actually....     -----------------------------------------------------------q
                                         # validator for this kind of data.frame
-    print(blueprints) 
+    if(debug){print(blueprints) }
                                         # Actually get data to blueprints
     blueprints %>% group_by(wave) %>% do(dfs={
         blueprint <- .$blueprints[[1]]
         wave <- .$wave[[1]]
         all.vars <-.$blueprints[[1]]$newvar
          ###
-                          cat(paste('Processing wave:',wave,'\n'))
+blueprint.log(paste('\n\nProcessing wave:',wave,'\n'))
                                         # get different unique filenames to process for each wave
                           blueprint.files <- unique(blueprint$file)
                                         # main file has to be the first specified file
@@ -169,13 +175,13 @@ blueprint <- function(
         
                                         # print(vars.to.get)
 ### Load main file ####################################################################################################
-                          cat('loading main file:',blueprint.main.file,'\n')
+                          blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
                           blueprint$file %>% str_detect(blueprint.main.file)                          -> pos.main.file
                           (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
 #df <- blueprint[pos.main.file,]
-        print(blueprint$wave                 )
+if(debug)        {print(blueprint$wave                 )}
                           blueprint[pos.main.file,] %>%
-                              load.and.recode(filter=filter) -> main.data
+                              load.and.recode(fun=fun) -> main.data
          
                                         # loaded and processed. remaining parts still to be processed
                           blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
@@ -183,7 +189,7 @@ blueprint <- function(
 ### restrict to variables that are specified by a file reference ❗️ should be: also a link
 
 ### Add the additional files  ####################################################################################################
-                print(all.vars)
+         if(debug){       print(all.vars)}
                           if(length(blueprint$file)>0){
                               for(x in unique(blueprint$file) )
                               {
@@ -203,8 +209,6 @@ blueprint <- function(
                                       links <-add.blueprint[,'link']
                                         #print(blueprint)
                                       functions <-add.blueprint[,'fun']
-                                        #print(functions)
-                                        #print(links)##
                                       if(sum(is.na(links)&!is.na(the.vars))>0)
                                           {
                                               stop(paste('You have to specify links for the variables\n',paste(the.vars,collapse=',')))
@@ -213,29 +217,16 @@ blueprint <- function(
                                       from.links <- strsplit(links,';')[[1]][1]
                                       ifelse (length(strsplit(links,';')[[1]])>1,            to.links <- strsplit(links,';')[[1]][2],to.links <- from.links)
                                       from.links <-  strsplit(from.links,',')[[1]]
-                                        # DEBUG> print(from.links)
                                       to.links <-  strsplit(to.links,',')[[1]]
 
-                                        #print(to.links)
-                                        #print(the.vars)
-                                        #print(head(data))
-                                        #         print(head(replace.vars.from.file(data,rep.file=x,
-                                        #                                           orig.vars=the.vars,
-                                        #                                           rep.vars=the.vars,
-                                        #                                           orig.id=from.links,rep.id=to.links)))
-                                        # DEBUG  
-                                        #print('here')
-                                        #
-                                      
-#### merge the data
                                   paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
-                                  link.condition
-                                  add.blueprint
-
+         #                         link.condition
+         #                         add.blueprint
+#### merge the data
                                   rbind(add.blueprint                           ,data.frame(newvar=to.links,var=to.links,file=rep_len(NA,length(to.links)),link=rep_len(NA,length(to.links)),fun=rep_len(NA,length(to.links)))) -> add.blueprint
 
 
-                                  add.blueprint %>% load.and.recode(filter)  -> data.add
+                                  add.blueprint %>% load.and.recode(fun=fun)  -> data.add
 
 #                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
                                   paste0('left_join(main,data.add,by=c(',link.condition,'))') -> code.to.execute
@@ -267,7 +258,7 @@ blueprint <- function(
             if(debug){print(blueprints.data)}
                                         #    blueprints.data    %>% do.call(rbind,.$dfs) -> final.df
     blueprints.data$dfs  -> dfs
-    dfs%>% do.call(bind_rows,.) %>% as_data_frame     -> final.df
+    dfs%>% do.call(rbind,.) %>% as_data_frame     -> final.df
 
                                         #    b  cat('Building data.frame for variables (newnames):\n')
 #
@@ -284,6 +275,5 @@ blueprint <- function(
     if(is.character(out_file)){export(final.df,file=out_file)}
     return(final.df )}
 
-blueprint(which='MergeESS',waves=1:2)  -> tes
-
-
+blueprint(which='MergeESS',waves=1:7)  -> tes
+tes$edu.max
