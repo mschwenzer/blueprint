@@ -1,15 +1,57 @@
+blueprint.remove.column.rows <- function(df)
+    {
+        ## Remove comment rows -----------------------------------------------------------
+        str_detect(df[,1],'^#.*') %>% which  -> commentrows
+      if (length(commentrows)>0){    blueprint[-commentrows,]  -> blueprint   }                                    
+                                                     }
+
+
+blueprint.log <- function(message){
+    
+    }
+
+return.df.with.certain.vars <- function(df,vars.to.get)
+{
+    # Return a data.frame containing certain variables also ordered by vars.to.get
+                          vars.to.get%in%names(df) %>% `!`  -> posis
+                          vars.to.get -> vars.to.get.new
+                          vars.to.get.new[posis]  %>% str_replace('$','=rep_len(NA_real_,nrow(df))') -> vars.to.get.new[posis]
+                          vars.to.get.new %>% paste0(collapse=',') %>%                               paste0('df %>% transmute(',.,')')                      -> code.to.execute
+                          eval(parse(text=code.to.execute))
+}
+    
+
+df.set.standard.names  <- function(df)
+{
+    names(df)  -> df.names
+    df.names %>% str_detect('var') %>% which -> df.var.columns
+    'var'  -> df.names[df.var.columns]
+    'newvar'  -> df.names[1]            
+    df.names %>% str_detect('file') %>% which -> df.file.columns
+    'file'  -> df.names[df.file.columns]
+    df.names %>% str_detect('link') %>% which -> df.link.columns
+    'link'  -> df.names[df.link.columns]    
+    df.names %>% str_detect('fun') %>% which -> df.fun.columns
+    'fun'  -> df.names[df.fun.columns]
+    df.names %>% str_detect('newvaw|var|fun|file|link|""') %>% `!` -> df.var.columns
+    'var'  -> df.names[df.var.columns]
+    df.names -> names(df)
+    return(df)
+    }
+
+
 constant <- function(x,y){y}
+
 blueprint.validator <- function(blueprint)
 {
-    require(testthat)
-expect_equal(1,1)
-return(NULL)
+return(    blueprint)
     }
 
 
 
 
-blueprint <- function(blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
+blueprint <- function(
+                      blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
                       out_file=NULL,
                       waves=NULL,
                       debug=0,
@@ -23,33 +65,67 @@ blueprint <- function(blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa
     require(rio)
                                         # Load Merge Data from XLS
     cat('Parsing file: ',blueprint,'\n')
-    vars <- import(file=blueprint,...)
-    vars %>% blueprint.validator
-    if(debug){print(vars)}
- #  names(vars)
+    import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
+        blueprint.set.standard.names  -> blueprint
+    # cut blueprint into waves
+    data.frame(startcol=(names(blueprint)=='var') %>% which,
+               # end column 
+               endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
+                        # + the last column containing everything
+                        length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)    %>%
+        group_by(wave)   %>% 
+        do(waves={blueprint[,c(1,(.$startcol):(.$endcol))]  %>%
+                                        # normalise to a data.frame with these variables
+                      return.df.with.certain.vars(c('newvar','var','file','link','fun')) %>%
+                                                     # validator for this kind of data.frame
+                                    blueprint.validator
+            #%>%
+         
+#        
+        }) -> blueprints
+        if(debug){print(blueprints)}
+## Validate all blueprints before something is done actually....     -----------------------------------------------------------
+#    blueprint  %>% group_by(wave) %>% do(
+    
+    
+            ## ifelse(is.null(blueprint.wave$file)){)}
+            ##    if(is.null(blueprint.wave$link)){blueprint.wave$link <- NA}
+            ## if(is.null(blueprint.wave$fun)){blueprint.wave$fun <- NA}                
+           ## blueprint.wave %>% transmute(newvar,var,file,link,fun)
+           
+##:ess-bp-start::browser@nil:##
+browser(expr=is.null(.ESSBP.[["@16@"]]));##:ess-bp-end:##
+    
+    
+    
+
+    ncol(blueprint)  -> blueprint.ncols
+
+ #  names(blueprint)
   #was :
-                                        #vars <- read.csv(a.file,sep=';')
+                                        #blueprint <- read.csv(a.file,sep=';')
                                         # check files
-  
-    ## Remove comment rows -----------------------------------------------------------
-  vars[,1] %>% str_detect('^#.*')  %>% which->   commentrows
-  if (length(commentrows)>0){    vars[-commentrows,]  -> vars   }
+
+
+    
+    #%>% `!` %>% which -> blueprint.func.columns    
+
     
     ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
-  rowstoprocess <- vars[,1]
+  rowstoprocess <- blueprint[,1]
   while(length(
-((vars[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+((blueprint[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
         >0))
           {
-              rowid <- ((vars[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+              rowid <- ((blueprint[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
               if((rowid-1)>0){
-                  frame.before <- vars[1:(rowid-1),]
+                  frame.before <- blueprint[1:(rowid-1),]
               }
-              if((rowid+1)<(nrow(vars)+1))
+              if((rowid+1)<(nrow(blueprint)+1))
                   {
-                      frame.after <- vars[(rowid+1):nrow(vars),]
+                      frame.after <- blueprint[(rowid+1):nrow(blueprint),]
                   }
-              to.process.vars <- vars[rowid,]
+              to.process.vars <- blueprint[rowid,]
 ## ❗️ to change
 pattern <- regmatches(to.process.vars[,1],regexpr('\\[[0-9]*:[0-9]*\\]',to.process.vars[,1]))
 nums <- eval(parse(
@@ -63,15 +139,15 @@ if(debug){          print(pattern)}
                                    to.process.vars %>% str_replace_all(pattern,x)
                 })
                names(frame.toadd) <- names(frame.before)
-             assign('vars',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(vars)+1)){frame.after}),-1)
+             assign('blueprint',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(blueprint)+1)){frame.after}),-1)
           }
   return.not.existing.files <- function(df)
       {
-          vars %>% names %>% str_detect('file') -> filevarpos
-          vars[,filevarpos] %>% unlist %>% c %>% unique  -> files.to.check
+          blueprint %>% names %>% str_detect('file') -> filevarpos
+          blueprint[,filevarpos] %>% unlist %>% c %>% unique  -> files.to.check
           llply(files.to.check,file.exists) %>% unlist %>% `!` %>% files.to.check[.]
       }
-    vars %>% return.not.existing.files  -> not.existing.files
+    blueprint %>% return.not.existing.files  -> not.existing.files
     # remove empty fields
         (not.existing.files=='') %>% which -> apos
     not.existing.files[-apos]  -> not.existing.files
@@ -81,15 +157,15 @@ if(debug){          print(pattern)}
       }
 
   cat('Building data.frame for variables (newnames):\n')
-vars[,1]  -> all.vars
+blueprint[,1]  -> all.vars
 
 #rowstoprocess
   #row names of all variables
-    varsnam <- names(vars)
+    varsnam <- names(blueprint)
   ## check for duplicate variable names and stop -----------------------------------------------------------
 
-  if(sum(duplicated(vars[,1]))>0){
-      stop(paste('Duplicate variablenames:',vars[which(duplicated(vars[,1]))[1],1]),' rows:',paste0(which(duplicated(vars[,1])),collapse=','))}
+  if(sum(duplicated(blueprint[,1]))>0){
+      stop(paste('Duplicate variablenames:',blueprint[which(duplicated(blueprint[,1]))[1],1]),' rows:',paste0(which(duplicated(blueprint[,1])),collapse=','))}
                                           #  print(varsnam)
   
   
@@ -97,17 +173,17 @@ vars[,1]  -> all.vars
   #add additional years
   
                                         #yea
-names(vars)[  seq(2,by=4,length=waves)] %>%
+names(blueprint)[  seq(2,by=4,length=waves)] %>%
     str_replace_all('X','') %>%
     as.numeric -> years
   #print(years)
   
 
-  vars <- do.call(data.frame,llply(vars,function(x){
+  blueprint <- do.call(data.frame,llply(blueprint,function(x){
         #Just add missing to empty strings / make empty cells NA
     is.na(x) <- x %in% c('')
     return(x)}))
-    names(vars) <- varsnam
+    names(blueprint) <- varsnam
   #print(vars)
   #print(vars)
   #n waves
@@ -120,7 +196,7 @@ ldply(
                       2+(0:(waves-1))*4,
                       function(wavecolumn){
                                         # isolate a data.frame, that contains the variable identifier (col1) and the columns of the current wave
-                          current.wave <- vars[,c(1,wavecolumn:(wavecolumn+3))]
+                          current.wave <- blueprint[,c(1,wavecolumn:(wavecolumn+3))]
                           names(current.wave) <- c('newvars','vars','files','links','rec')
 ###
                           cat(paste('Processing wave:',wave,'\n'))
@@ -221,14 +297,11 @@ ldply(
                           ## Add wave specifier -----------------------------------------------------------
 
                           cat('####################################################################################################\n')
-                          all.vars%in%names(current.data) %>% `!`  -> posis
-                          all.vars -> all.vars.new
-                          all.vars.new[posis]  %>% str_replace('$','=rep_len(NA_real_,nrow(current.data))') -> all.vars.new[posis]
-                          all.vars.new %>% paste0(collapse=',') %>%                               paste0('current.data %>% transmute(',.,',wave=',wave,') ->current.data ')                      -> code.to.execute
+                          current.data %>% mutate(wave)  %>% return.df.with.certain.vars(c('wave',all.vars))  -> current.data
                           wave <<- wave+1
-                          eval(parse(text=code.to.execute))
                           return(current.data)
                       })  %>% as_data_frame   -> data
     if(is.character(out_file)){export(data,file=out_file)}
     return(data)
 }
+blueprint(which='MergeESS')
