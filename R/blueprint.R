@@ -1,14 +1,7 @@
 ## make empty NA -----------------------------------------------------------
 set.empty.values.to.NA <- function(blueprint)
 {
-    varsnam <- names(blueprint)
-                                          #  print(varsnam)
-    blueprint <- do.call(data.frame,llply(blueprint,function(x){
-        #Just add missing to empty strings / make empty cells NA
-    is.na(x) <- x %in% c('')
-    return(x)}))
-    names(blueprint) <- varsnam
-    return(blueprint)
+    blueprint %>% mutate_all(.funs=funs(ifelse(.=='',NA,.)))
     }
 ## add.variables.specified.by.brackets -----------------------------------------------------------
 add.variables.specified.by.brackets <- function(blueprint)
@@ -49,7 +42,6 @@ if(debug){          print(pattern)}
 ## return.not.existing.files -----------------------------------------------------------
 return.not.existing.files <- function(blueprint)
       {
-         
           blueprint$file %>% unlist %>% c %>% unique %>% na.omit  -> files.to.check
           llply(files.to.check,file.exists) %>% unlist %>% `!` %>% files.to.check[.]
       }
@@ -121,7 +113,7 @@ blueprint.check.for.duplicate.variable.names <- function(blueprint)
 ## blueprint.validator -----------------------------------------------------------
 blueprint.validator <- function(blueprint)
 {
-
+    blueprint %>% 
         blueprint.check.for.missing.files %>%
         blueprint.check.for.duplicate.variable.names 
     }
@@ -149,45 +141,54 @@ blueprint <- function(
                endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                         # + the last column containing everything
                         length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)    %>%
+        filter(wave==waves) %>% 
         group_by(wave)   %>% 
-        do(waves={blueprint[,c(1,(.$startcol):(.$endcol))]  %>%
+        do(blueprints={blueprint[,c(1,(.$startcol):(.$endcol))]  %>%
                                         # normalise to a data.frame with these variables
                       return.df.with.certain.vars(c('newvar','var','file','link','fun')) %>%
+                      add.variables.specified.by.brackets %>%
+                      set.empty.values.to.NA  %>%
+                      blueprint.validator})             -> blueprints
+    rm(blueprint)
 ## Validate all blueprints before something is done actually....     -----------------------------------------------------------q
                                         # validator for this kind of data.frame
-    add.variables.specified.by.brackets %>%
-    set.empty.values.to.NA %>% 
-    blueprint.validator -> blueprint
-##:ess-bp-start::browser@nil:##
-browser(expr=is.null(.ESSBP.[["@20@"]]));##:ess-bp-end:##
-    
-                          names(blueprint) <- c('newvars','vars','files','links','rec')
-###
+    print(blueprints) 
+                                        # Actually get data to blueprints
+    blueprints %>% group_by(wave) %>% do(dfs={
+        blueprint <- .$blueprints[[1]]
+        wave <- .$wave[[1]]
+        all.vars <-.$blueprints[[1]]$newvar
+         ###
                           cat(paste('Processing wave:',wave,'\n'))
                                         # get different unique filenames to process for each wave
-                          blueprint.files <- unique(blueprint$files)
+                          blueprint.files <- unique(blueprint$file)
                                         # main file has to be the first specified file
                           blueprint.main.file <- blueprint.files[1]
                                         # vars in main file that shall be kept
-                          vars.to.get <- blueprint$vars
+                          vars.to.get <- blueprint$var
+        
                                         # print(vars.to.get)
 ### Load main file ####################################################################################################
                           cat('loading main file:',blueprint.main.file,'\n')
-                          blueprint$files %>% str_detect(blueprint.main.file)                          -> pos.main.file
+                          blueprint$file %>% str_detect(blueprint.main.file)                          -> pos.main.file
                           (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
 #df <- blueprint[pos.main.file,]
+        print(blueprint$wave                 )
+                          blueprint[pos.main.file,] %>%
+                              load.and.recode(filter=filter) -> main.data
+         
+                                        # loaded and processed. remaining parts still to be processed
+                          blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
 
-                          blueprint[pos.main.file,] %>% load.and.recode(filter) -> current.data
-
-                          blueprint <- blueprint[ !blueprint[,'files'] == blueprint.main.file & blueprint[,'files']!='',]
 ### restrict to variables that are specified by a file reference ❗️ should be: also a link
-                          blueprint <- blueprint[!is.na(blueprint$files),]
 
 ### Add the additional files  ####################################################################################################
-                          if(length(blueprint$files)>0){
-                              for(x in unique(blueprint$files) )
+                print(all.vars)
+                          if(length(blueprint$file)>0){
+                              for(x in unique(blueprint$file) )
                               {
                                   cat('adding variables from file:',x,'\n')
+                                  
 
                                         #x <- unique(blueprint$files)[1]
                                         #print(blueprint)
@@ -197,9 +198,9 @@ browser(expr=is.null(.ESSBP.[["@20@"]]));##:ess-bp-end:##
                                       
 #                                      new.vars <- ,'newvars']
                                         # variables that replace in replacement frame
-                                      the.vars <- add.blueprint[,'vars']
+                                      the.vars <- add.blueprint[,'var']
                                         #print(the.vars)##
-                                      links <-add.blueprint[,'links']
+                                      links <-add.blueprint[,'link']
                                         #print(blueprint)
                                       functions <-add.blueprint[,'fun']
                                         #print(functions)
@@ -231,14 +232,14 @@ browser(expr=is.null(.ESSBP.[["@20@"]]));##:ess-bp-end:##
                                   link.condition
                                   add.blueprint
 
-                                  rbind(add.blueprint                           ,data.frame(newvars=to.links,vars=to.links,files=rep_len(NA,length(to.links)),links=rep_len(NA,length(to.links)),fun=rep_len(NA,length(to.links)))) -> add.blueprint
+                                  rbind(add.blueprint                           ,data.frame(newvar=to.links,var=to.links,file=rep_len(NA,length(to.links)),link=rep_len(NA,length(to.links)),fun=rep_len(NA,length(to.links)))) -> add.blueprint
 
 
                                   add.blueprint %>% load.and.recode(filter)  -> data.add
 
 #                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
-                                  paste0('left_join(current.data,data.add,by=c(',link.condition,'))') -> code.to.execute
-                                  eval(parse(text=code.to.execute))  -> current.data
+                                  paste0('left_join(main,data.add,by=c(',link.condition,'))') -> code.to.execute
+                                  eval(parse(text=code.to.execute))  -> main.data
                                       ## codestoexecute <- which(blueprint$file==x&(grepl('`',blueprint$vars,perl=TRUE)))
                                       ## for(a.row in codestoexecute)
                                       ##     {
@@ -257,16 +258,19 @@ browser(expr=is.null(.ESSBP.[["@20@"]]));##:ess-bp-end:##
 
                                         #                                                    vars.to.get
                           ## Execute the code from the code -----------------------------------------------------------
-                          cat('####################################################################################################\n')
-                          current.data %>% mutate(wave)  %>% return.df.with.certain.vars(c('wave',all.vars))  -> current.data
-                          wave <<- wave+1
-                          return(current.data)
-       }}}) -> blueprints
-        if(debug){print(blueprints)}
-##:ess-bp-start::browser@nil:##
-browser(expr=is.null(.ESSBP.[["@16@"]]));##:ess-bp-end:##
-#      cat('Building data.frame for variables (newnames):\n')
-blueprint[,1]  -> all.vars
+                                  cat('####################################################################################################\n')
+         
+                              }}
+         main.data %>% mutate(wave)  %>% return.df.with.certain.vars(c('wave',all.vars))  -> main.data
+        return(main.data)
+    }) -> blueprints.data
+            if(debug){print(blueprints.data)}
+                                        #    blueprints.data    %>% do.call(rbind,.$dfs) -> final.df
+    blueprints.data$dfs  -> dfs
+    dfs%>% do.call(bind_rows,.) %>% as_data_frame     -> final.df
+
+                                        #    b  cat('Building data.frame for variables (newnames):\n')
+#
                                # do for every wave (additional colums)
     
 ## ldply(
@@ -275,8 +279,11 @@ blueprint[,1]  -> all.vars
 ##                       function(wavecolumn){
 ##                                         # isolate a data.frame, that contains the variable identifier (col1) and the columns of the current wave
 
-##                       }  %>% as_data_frame   -> data}})
-    if(is.character(out_file)){export(data,file=out_file)}
-    return(data)}
+    ##                       }  %>% as_data_frame   -> data}})
+    
+    if(is.character(out_file)){export(final.df,file=out_file)}
+    return(final.df )}
 
-blueprint(which='MergeESS')
+blueprint(which='MergeESS',waves=1:2)  -> tes
+
+
