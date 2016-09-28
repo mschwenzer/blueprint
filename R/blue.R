@@ -165,7 +165,7 @@ blueprint.validator <- function(blueprint)
         blueprint.check.for.duplicate.variable.names 
     }
 ## blueprint -----------------------------------------------------------
-blueprint <- function(
+blue <- function(
                       blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
                       out_file=NULL,
                       waves=NULL,

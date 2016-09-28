@@ -33,7 +33,7 @@ If the variables specified in link condition are not in the /var1.../ column the
 After saving this blueprint, we can import and merge the data by stating:
 \begin{tt}
  \\
-my.df <- blueprint('my.blueprint.name.csv')\\
+my.df <- blue('my.blueprint.name.csv')\\
  \\
 \end{tt}
 my.df is a new data.frame with the selected variables from individual.csv plus the household variables that match the link condition.
@@ -62,7 +62,7 @@ Figure XXX shows a more advandced blueprint file reflecting this structure.
 Entering the appropriate data will rename, transform and join the data automatically. In short waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.
 
 * Logging and descriptives of the merging / transfomation process
-Blueprint is intendedly not very verbose when called. Nonetheless it has a loggin feature that can be activated by setting blueprint(...,extended=TRUE). In this case a logfile will be created that contains extended information on the transformation process (recode table and descriptives ont distribution) and information about automatic type conversions, statistics on dimension of the data. If you don't specify a logfile by blueprint(...,extended=TRUE,logfile='/some/path/to.file.')), the name will be resambled by the name of the blueprint file. The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.  
+Blueprint is intendedly not very verbose when called. Nonetheless it has a loggin feature that can be activated by setting blue(...,extended=TRUE). In this case a logfile will be created that contains extended information on the transformation process (recode table and descriptives ont distribution) and information about automatic type conversions, statistics on dimension of the data. If you don't specify a logfile by blue(...,extended=TRUE,logfile='/some/path/to.file.')), the name will be resambled by the name of the blueprint file. The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.  
 \begin{tiny}
 \begin{verbatim}
   
