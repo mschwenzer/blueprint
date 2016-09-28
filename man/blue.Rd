@@ -1,5 +1,5 @@
-\name{blueprint}
-\alias{blueprint}
+\name{blue}
+\alias{blue}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 blueprint

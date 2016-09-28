@@ -1,8 +1,9 @@
 \name{blueprint-package}
 \alias{blueprint-package}
+\alias{blueprint}
 \docType{package}
 \title{
-\packageTitle{blueprint}
+\packageTitle{blueprint-package}
 }
 \description{
 \packageDescription{blueprint}
