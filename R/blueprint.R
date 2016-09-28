@@ -1,9 +1,24 @@
+                                  process.links <- function(links)        {
+                                      lapply(links,function(link)
+                                          {
+                                          if(is.na(link)){return(NA)}
+                                         link %>% str_split(',') %>%  .[[1]]  -> link
+                                          link %>% str_detect('=') %>% `!` %>% which  -> pos.no.equal.sign
+                          #                print(pos.no.equal.sign)
+                                        # add equal sign for condition
+                          #                print(link[pos.no.equal.sign])
+                                                                    link[pos.no.equal.sign]  %>% paste0(.,'=',.)  -> link[pos.no.equal.sign]
+                          #                print(link)                                          
+                                         link %>% str_replace_all('=','"="') %>% paste0('"',.,'"')  %>% paste0(collapse=',')-> link
+                                         return(link)
+                                          }) %>% unlist}
 
 blueprint.variable.diff <- function(variable,funs,name='',wave='')
 {
     blueprint.log('')
+    blueprint.log(Sys.time())
     blueprint.log('')
-blueprint.log        (paste0('----Transformation. Variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
+blueprint.log        (paste0('----Transformation of variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
     variable %>% duplicated %>% `!`  %>% which  -> old.pos
     variable[old.pos] -> kept.levels.of.variable
     class(variable) -> old.type
@@ -259,12 +274,15 @@ cat('add.file...')
                                               stop(paste('You have to specify links for the variables\n',paste(the.vars,collapse=',')))
                                           }
       
-                                      from.links <- strsplit(links,';')[[1]][1]
-                                      ifelse (length(strsplit(links,';')[[1]])>1,            to.links <- strsplit(links,';')[[1]][2],to.links <- from.links)
-                                      from.links <-  strsplit(from.links,',')[[1]]
-                                      to.links <-  strsplit(to.links,',')[[1]]
+                                      ## from.links <- strsplit(links,';')[[1]][1]
+                                      ## ifelse (length(strsplit(links,';')[[1]])>1,            to.links <- strsplit(links,';')[[1]][2],to.links <- from.links)
+                                      ## from.links <-  strsplit(from.links,',')[[1]]
+                                  ## to.links <-  strsplit(to.links,',')[[1]]
 
-                                  paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
+
+                                  links %>% process.links -> link.condition}
+                                  
+                          #        paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
          #                         link.condition
          #                         add.blueprint
 #### merge the data
@@ -296,7 +314,7 @@ cat('add.file...')
                           ## Execute the code from the code -----------------------------------------------------------
 #                                  cat('####################################################################################################\n')
          
-                              }}
+                              }
          main.data %>% mutate(wave)  %>% return.df.with.certain.vars(c('wave',all.vars))  -> main.data
         return(main.data)
     }) -> blueprints.data
@@ -304,6 +322,7 @@ cat('add.file...')
                                         #    blueprints.data    %>% do.call(rbind,.$dfs) -> final.df
     blueprints.data$dfs  -> dfs
     dfs%>% do.call(rbind,.) %>% as_data_frame     -> final.df
+    blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
     blueprint.log(paste('Finally ready. Merged data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
@@ -326,21 +345,11 @@ cat('add.file...')
         blueprint.log(paste0('Written data.frame to file:',out_file,'.'))
     }
     return(final.df )}
-?export
-blueprint(which='MergeESS',waves=1:3,loggin=FALSE)  -> tes
-blueprint(which='MergePisa',waves=1:5,logging=1)
-library(microbenchmark)
-microbenchmark(blueprint(which='MergePisa',waves=1:5,logging=0))
 
-tmp <- tempfile()
-Rprof(tmp, interval = 0.1)
-
-Rprof(NULL)
-summaryRprof(tmp)
 
 open.blue <- function(
                           file=paste0(getwd(),'/blueprint.xlsx'),
-                          waves=2,
+                          waves=1,
                           type=NULL
                           )
 {
@@ -365,12 +374,4 @@ v\n'
     }
 
 
-import('my.blueprint.name.csv')
-%>%slice(1)%>%export('my.blueprint.name.csv')
-data.frame(a=Sys.time()) %>% export(file='/dsk/test.R')
 
-blueprint(which='MergePisa',waves=1:5,logging=0,out_file='/dsk/test.RData')  -> tes
-;
-Sys.time()
-blueprint(which='MergePisa',waves=1:5,logging=1)  -> tes
-Sys.time()
