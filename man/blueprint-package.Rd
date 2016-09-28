@@ -1,6 +1,5 @@
 \name{blueprint-package}
 \alias{blueprint-package}
-\alias{blueprint}
 \docType{package}
 \title{
 \packageTitle{blueprint}
@@ -9,10 +8,7 @@
 \packageDescription{blueprint}
 }
 \details{
-
-The DESCRIPTION file:
-\packageDESCRIPTION{blueprint}
-\packageIndices{blueprint}
+See the vignette.
 ~~ An overview of how to use the package, including the most important functions ~~
 }
 \author{
