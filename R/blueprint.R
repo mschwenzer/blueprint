@@ -2,17 +2,22 @@
 blueprint.variable.diff <- function(variable,funs,name='',wave='')
 {
     blueprint.log('')
-    blueprint.log('')    
+    blueprint.log('')
 blueprint.log        (paste0('----Transformation. Variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
     variable %>% duplicated %>% `!`  %>% which  -> old.pos
     variable[old.pos] -> kept.levels.of.variable
     class(variable) -> old.type
-    llply(kept.levels.of.variable,function(x){str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
+    extended <- length(kept.levels.of.variable)<40
+if(extended)
+    {
+            llply(kept.levels.of.variable,function(x){str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
+            }
     eval(parse(text=paste0('variable %>% ',funs)))  -> variable
     class(variable) -> new.type
+    if(extended){
     data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% arrange(old)  ->     printfr
     
-capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla
+capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
                             if(new.type!=old.type){
                                 blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Was this intended?'))
                             }
@@ -161,7 +166,7 @@ blueprint <- function(
     require(rio)
     require(logging)    
                                         # Load Merge Data from XLS
-    cat('Parsing file: ',blueprint,'\n')
+
     if(debug){cat(paste0('file: ',blueprint))}
     if(!logfile)
         {
@@ -174,6 +179,7 @@ blueprint <- function(
         }
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)
     if(debug){print('logger created')}
+    cat(paste0('Parsing file: ',blueprint,'.',if(logging){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...'))
     import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
         blueprint.set.standard.names  -> blueprint
     if(debug){print(blueprint)}
@@ -221,7 +227,7 @@ blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 if(debug)        {print(blueprint$wave                 )}
                           blueprint[pos.main.file,] %>%
                               load.and.recode(fun=fun,wave=wave,logging=logging) -> main.data
-         
+cat('main.file...')         
                                         # loaded and processed. remaining parts still to be processed
                           blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
 
@@ -232,10 +238,8 @@ if(debug)        {print(blueprint$wave                 )}
                           if(length(blueprint$file)>0){
                               for(x in unique(blueprint$file) )
                               {
-                                  ##:ess-bp-start::browser@nil:##
-browser(expr=is.null(.ESSBP.[["@47@"]]));##:ess-bp-end:##
                                   blueprint.log(paste0('--- Adding additional variables from file:',x,'\n'))
-                                  
+cat('add.file...')
 
                                         #x <- unique(blueprint$files)[1]
                                         #print(blueprint)
@@ -290,7 +294,7 @@ browser(expr=is.null(.ESSBP.[["@47@"]]));##:ess-bp-end:##
 
                                         #                                                    vars.to.get
                           ## Execute the code from the code -----------------------------------------------------------
-                                  cat('####################################################################################################\n')
+#                                  cat('####################################################################################################\n')
          
                               }}
          main.data %>% mutate(wave)  %>% return.df.with.certain.vars(c('wave',all.vars))  -> main.data
@@ -300,7 +304,9 @@ browser(expr=is.null(.ESSBP.[["@47@"]]));##:ess-bp-end:##
                                         #    blueprints.data    %>% do.call(rbind,.$dfs) -> final.df
     blueprints.data$dfs  -> dfs
     dfs%>% do.call(rbind,.) %>% as_data_frame     -> final.df
-    blueprint.log(paste('Ready. Final data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
+    blueprint.log(Sys.time())
+    blueprint.log('')    
+    blueprint.log(paste('Finally ready. Merged data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
 
                                         #    b  cat('Building data.frame for variables (newnames):\n')
 #
@@ -314,11 +320,57 @@ browser(expr=is.null(.ESSBP.[["@47@"]]));##:ess-bp-end:##
 
     ##                       }  %>% as_data_frame   -> data}})
     
-    if(is.character(out_file)){export(final.df,file=out_file)
-        blueprint.log('Written data.frame to file',out_file,'.')
+    if(is.character(out_file)){
+        cat(paste0('exporting to file: ',out_file,'\n'))
+        export(final.df,file=out_file)
+        blueprint.log(paste0('Written data.frame to file:',out_file,'.'))
     }
     return(final.df )}
-
+?export
 blueprint(which='MergeESS',waves=1:3,loggin=FALSE)  -> tes
-blueprint(which='MergePisa',waves=1:2,logging=FALSE)  -> tes
+blueprint(which='MergePisa',waves=1:5,logging=1)
+library(microbenchmark)
+microbenchmark(blueprint(which='MergePisa',waves=1:5,logging=0))
 
+tmp <- tempfile()
+Rprof(tmp, interval = 0.1)
+
+Rprof(NULL)
+summaryRprof(tmp)
+
+open.blue <- function(
+                          file=paste0(getwd(),'/blueprint.xlsx'),
+                          waves=2,
+                          type=NULL
+                          )
+{
+    if(!file.exists(file)){
+        c('var','file','fun','link') -> varnams
+    c('newvar',paste0(rep(varnams,times=waves),sort(rep((1:waves),times=4))))-> varnams
+        paste0(varnams,'=c("","")',collapse=',')-> varnams
+        c('# The new name of the variable (that merges the waves).','The original variable in the data.set','The original file that does contain this variable','A function or pipe of functions that is executed on the orignal variable var1 (e.g. for recoding)','Specifications of the variables that link the data') -> description
+        eval(parse(text=paste0('data.frame(',varnams,')'))) -> a.df
+        a.df[1,1] <- '#'
+        a.df[1,c(2+4*((1:waves)-1))]<-paste0(c('wave'),1:waves)
+        a.df[1,c(5+4*((1:waves)-1))]<-'^\n
+|\n
+v\n'
+    a.df[3,1:5] <- description
+    a.df %>% export(file=file)
+    cat(paste0('Written blueprint template to file ',file,'.\n'))
+    }
+    openFILE <- function(x) browseURL(paste0('file://', file.path(getwd(), x)))
+    openFILE(file)
+    invisible(file)
+    }
+
+
+import('my.blueprint.name.csv')
+%>%slice(1)%>%export('my.blueprint.name.csv')
+data.frame(a=Sys.time()) %>% export(file='/dsk/test.R')
+
+blueprint(which='MergePisa',waves=1:5,logging=0,out_file='/dsk/test.RData')  -> tes
+;
+Sys.time()
+blueprint(which='MergePisa',waves=1:5,logging=1)  -> tes
+Sys.time()
