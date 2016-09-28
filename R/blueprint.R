@@ -172,7 +172,7 @@ blueprint <- function(
                       debug=FALSE,
                       logfile=FALSE,                      
                       fun=TRUE,
-                      extended=TRUE,
+                      extended=FALSE,
                       ...
     ){
    # requirements  
