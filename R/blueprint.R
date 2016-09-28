@@ -1,17 +1,19 @@
                                   process.links <- function(links)        {
-                                      lapply(links,function(link)
-                                          {
-                                          if(is.na(link)){return(NA)}
-                                         link %>% str_split(',') %>%  .[[1]]  -> link
-                                          link %>% str_detect('=') %>% `!` %>% which  -> pos.no.equal.sign
-                          #                print(pos.no.equal.sign)
-                                        # add equal sign for condition
-                          #                print(link[pos.no.equal.sign])
-                                                                    link[pos.no.equal.sign]  %>% paste0(.,'=',.)  -> link[pos.no.equal.sign]
-                          #                print(link)                                          
-                                         link %>% str_replace_all('=','"="') %>% paste0('"',.,'"')  %>% paste0(collapse=',')-> link
-                                         return(link)
-                                          }) %>% unlist}
+                                          lapply(links,function(link)
+                                                  {
+                                                  if(is.na(link)){return(NA)}
+                                                 link %>% str_split(',') %>%  .[[1]]  -> link
+                                                  link %>% str_detect('=') %>% `!` %>% which  -> pos.no.equal.sign
+                                  #                print(pos.no.equal.sign)
+                                                    # add equal sign for condition
+                                      #                print(link[pos.no.equal.sign])
+                                                                                link[pos.no.equal.sign]  %>% paste0(.,'=',.)  -> link[pos.no.equal.sign]
+                                  #                print(link)
+                                                     link %>% str_replace_all('=','"="') %>% paste0('"',.,'"')  %>% paste0(collapse=',')-> link
+                                                 return(link)
+                                                  }) %>% unlist}
+
+
 
 blueprint.variable.diff <- function(variable,funs,name='',wave='')
 {
@@ -170,7 +172,7 @@ blueprint <- function(
                       debug=FALSE,
                       logfile=FALSE,                      
                       fun=TRUE,
-                      logging=TRUE,
+                      extended=TRUE,
                       ...
     ){
    # requirements  
@@ -194,7 +196,7 @@ blueprint <- function(
         }
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)
     if(debug){print('logger created')}
-    cat(paste0('Parsing file: ',blueprint,'.',if(logging){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...'))
+    cat(paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...'))
     import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
         blueprint.set.standard.names  -> blueprint
     if(debug){print(blueprint)}
@@ -241,7 +243,7 @@ blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #df <- blueprint[pos.main.file,]
 if(debug)        {print(blueprint$wave                 )}
                           blueprint[pos.main.file,] %>%
-                              load.and.recode(fun=fun,wave=wave,logging=logging) -> main.data
+                              load.and.recode(fun=fun,wave=wave,extended=extended) -> main.data
 cat('main.file...')         
                                         # loaded and processed. remaining parts still to be processed
                           blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
@@ -266,7 +268,7 @@ cat('add.file...')
                                         # variables that replace in replacement frame
                                       the.vars <- add.blueprint[,'var']
                                         #print(the.vars)##
-                                      links <-add.blueprint[,'link']
+                                  links <-add.blueprint[,'link']
                                         #print(blueprint)
                                       functions <-add.blueprint[,'fun']
                                       if(sum(is.na(links)&!is.na(the.vars))>0)
@@ -274,26 +276,30 @@ cat('add.file...')
                                               stop(paste('You have to specify links for the variables\n',paste(the.vars,collapse=',')))
                                           }
       
-                                      ## from.links <- strsplit(links,';')[[1]][1]
-                                      ## ifelse (length(strsplit(links,';')[[1]])>1,            to.links <- strsplit(links,';')[[1]][2],to.links <- from.links)
-                                      ## from.links <-  strsplit(from.links,',')[[1]]
-                                  ## to.links <-  strsplit(to.links,',')[[1]]
+                          
+
+                          
 
 
-                                  links %>% process.links -> link.condition}
-                                  
+                                  add.blueprint$link %>% str_split(',') %>% llply(.,function(x){x %>% str_replace('^.*=','')})  -> to.links                                      
+# find link variables not specified in blueprints
+                                      ((to.links %>% unlist %>% unique)    %in% add.blueprint$newvar) %>% `!` -> pos
+                                      (to.links %>% unlist %>% unique)[pos] -> vars.to.add
+cat('vars.to.add:\n',vars.to.add)
+                                                            links %>% process.links -> link.condition
                           #        paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
          #                         link.condition
-         #                         add.blueprint
+         #                         add vars.to.add to add.blueprint : 
+
+                                  rbind(add.blueprint                           ,data.frame(newvar=vars.to.add,var=vars.to.add,file=rep_len(NA,length(vars.to.add)),link=rep_len(NA,length(vars.to.add)),fun=rep_len(NA,length(vars.to.add)))) -> add.blueprint
+
 #### merge the data
-                                  rbind(add.blueprint                           ,data.frame(newvar=to.links,var=to.links,file=rep_len(NA,length(to.links)),link=rep_len(NA,length(to.links)),fun=rep_len(NA,length(to.links)))) -> add.blueprint
-
-
-                                  add.blueprint %>% load.and.recode(fun=fun,wave=wave,logging=logging)  -> data.add
+                                  add.blueprint %>% load.and.recode(fun=fun,wave=wave,extended=extended)  -> data.add
 
 #                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
                                   paste0('left_join(main.data,data.add,by=c(',link.condition,'))') -> code.to.execute
                                   eval(parse(text=code.to.execute))  -> main.data
+                                  }
                                       ## codestoexecute <- which(blueprint$file==x&(grepl('`',blueprint$vars,perl=TRUE)))
                                       ## for(a.row in codestoexecute)
                                       ##     {

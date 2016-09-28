@@ -27,7 +27,10 @@ Every row represents an unique variable of a final data.frame. The name of this 
 | household.property | property | household.csv  | household.id=idno |      |
 |--------------------+----------+----------------+-------------------+------|
 \end{tt}\normalsize 
-If we want to add also household income and property which is in the file household.csv we typically want to left_ join, which equals adding columns for additional variables and keeping only the values of household.csv those units that ara also in individual.csv. For this we have to define how the which values in the files individual.csv and household.csv relate to the same units. This is achieved by defining a link condition. Let's assume in file 'household.csv' evey household has an id number called 'idno'. So we would specify the link condition household.id=idno. After saving this blueprint, we can import and merge the data by stating:
+If we want to add also household income and property which is in the file household.csv we typically want to left_ join, which equals adding columns for additional variables and keeping only the values of household.csv those units that ara also in individual.csv. For this we have to define how the which values in the files individual.csv and household.csv relate to the same units. 
+This is achieved by defining a link condition. Link conditions match the syntax of /dplyr::left_join/ (but leaving out apostrophes). Let's assume in file 'household.csv' evey household has an id number called 'idno'. So we would specify the link condition household.id=idno . Several link conditions can be combined by comma. The first part relates to new variable name specified as newvar, the second to the original name in the data file to merge. If only single variables are given, they are assumed to the name of the newvar and are also in the file to merge.  
+If the variables specified in link condition are not in the /var1.../ column they will be used for merging but dropped afterwards.
+After saving this blueprint, we can import and merge the data by stating:
 \begin{tt}
  \\
 my.df <- blueprint('my.blueprint.name.csv')\\
