@@ -354,7 +354,7 @@ if(debug){cat('vars.to.add:\n',vars.to.add)}
 
 
 open.blue <- function(
-                          file=paste0(getwd(),'/blueprint.xlsx'),
+                          blueprint=paste0(getwd(),'/blueprint.xlsx'),
                           waves=1,
                           type=NULL
                           )
