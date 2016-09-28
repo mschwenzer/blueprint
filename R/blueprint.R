@@ -285,7 +285,7 @@ cat('add.file...')
 # find link variables not specified in blueprints
                                       ((to.links %>% unlist %>% unique)    %in% add.blueprint$newvar) %>% `!` -> pos
                                       (to.links %>% unlist %>% unique)[pos] -> vars.to.add
-cat('vars.to.add:\n',vars.to.add)
+if(debug){cat('vars.to.add:\n',vars.to.add)}
                                                             links %>% process.links -> link.condition
                           #        paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
          #                         link.condition
