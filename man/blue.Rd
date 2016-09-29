@@ -10,10 +10,10 @@ transform them by specified functions (e.g. to recode values) and recombine them
 
 }
 \usage{
-blueprint(blueprint =
+blue(blue =
 "/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx",
-logfile=determinde.by.blueprint, , waves
-= 1, out_file=NULL)
+logfile=determinde.by.blueprint, waves=NULL,debug=FALSE,logfile=FALSE,fun=TRUE
+extended=FALSE,out_file=NULL)
 
 }
 %- maybe also 'usage' for other objects documented here.

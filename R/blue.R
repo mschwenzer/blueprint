@@ -1,4 +1,57 @@
-                                  process.links <- function(links)        {
+attrs.as.factor <- function (x)
+{
+    require(forcats)
+     the.label <- x %>% attr("label")
+    from <- x %>% attr("labels")
+#    print(from)
+    if(from %>% is.numeric)
+    {
+        paste0('`',from,'`') -> from
+    }
+    else
+    {
+        paste0('"',from,'"') -> from
+    }
+#    print(from)
+    x %>% attr("labels") %>% names -> to
+    paste0('"',to,'"') -> to
+    llply(1:length(from),function(id){paste0(from[id],'=',to[id])}) %>% paste0(collapse=',') -> recod
+#    print(recod)
+                                        #     rownames(cats) <- NULL
+    paste0('x %>% dplyr::recode(',recod,') %>% as.factor-> x') -> code.to.eval
+#    print(code.to.eval)
+    eval(parse(text=code.to.eval))
+    return(x)
+#     attr(x, "label") <- the.label
+ }
+
+
+
+
+load.and.recode <-
+function(df,fun=TRUE,wave=1,extended=TRUE,debug=FALSE)
+                          {
+                                        #                         cat('recs:\n')
+                                        #                          print(recs)
+                              # find non-empty fun (rec) columns  / ❗️ replace by str_match / find out why it can be string "NA" which is a bug
+                              ((df$fun!='NA')&(!is.na(df$fun))&(!is.nan(df$fun)))  %>% which -> rep.pos
+                              if(debug){   print(rep.pos)}
+                              if(extended){
+                                  paste0(df$var[rep.pos],' %>% blueprint.variable.diff(fun="',df$fun[rep.pos],'",name="',df$var[rep.pos],'",wave="',wave,'")') -> df$var[rep.pos]
+                              }
+                              else{
+                                  paste0(df$var[rep.pos],' %>% ',df$fun[rep.pos]) -> df$var[rep.pos]
+                                  }
+                              paste0(df$newvar,'=',df$var,collapse=',') -> transmute.code
+                              # create a string that renames/selects with select and mutates afterwards
+                              paste0('import("',df$file[1],'")',if(fun){paste0(' %>% transmute(',transmute.code,')')}) -> eval.code
+#                              print(eval.code)
+                                        # execute and return
+#                              print(eval.code)
+                              eval(parse(text=eval.code))
+                          }
+
+process.links <- function(links)        {
                                           lapply(links,function(link)
                                                   {
                                                   if(is.na(link)){return(NA)}
@@ -165,6 +218,7 @@ blueprint.validator <- function(blueprint)
         blueprint.check.for.duplicate.variable.names 
     }
 ## blueprint -----------------------------------------------------------
+
 blue <- function(
                       blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
                       out_file=NULL,
@@ -198,7 +252,7 @@ blue <- function(
     if(debug){print('logger created')}
     cat(paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...'))
     import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
-        blueprint.set.standard.names  -> blueprint
+        df.set.standard.names  -> blueprint
     if(debug){print(blueprint)}
                                         # cut blueprint into waves
 
@@ -359,7 +413,8 @@ open.blue <- function(
                           type=NULL
                           )
 {
-    if(!file.exists(file)){
+    
+    if(!file.exists(blueprint)){
         c('var','file','fun','link') -> varnams
     c('newvar',paste0(rep(varnams,times=waves),sort(rep((1:waves),times=4))))-> varnams
         paste0(varnams,'=c("","")',collapse=',')-> varnams
@@ -371,12 +426,12 @@ open.blue <- function(
 |\n
 v\n'
     a.df[3,1:5] <- description
-    a.df %>% export(file=file)
-    cat(paste0('Written blueprint template to file ',file,'.\n'))
+    a.df %>% export(file=blueprint)
+    cat(paste0('Written blueprint template to file ',blueprint,'.\n'))
     }
-    openFILE <- function(x) browseURL(paste0('file://', file.path(getwd(), x)))
-    openFILE(file)
-    invisible(file)
+    openFILE <- function(x) browseURL(paste0('file://', blueprint))
+    openFILE(blueprint)
+    invisible(blueprint)
     }
 
 
