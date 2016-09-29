@@ -1,3 +1,16 @@
+normalised.path.and.dir.exists <- function(filepath)
+    {
+    suppressWarnings(
+        filepath %>% normalizePath  -> filepath
+    )
+    suppressWarnings(    
+                                        # Will stop and print error if directory does not exist        
+        filepath %>% dirname %>% normalizePath(mustWork=TRUE)
+    )
+    return(filepath)
+}
+
+
 attrs.as.factor <- function (x)
 {
     require(forcats)
@@ -413,7 +426,7 @@ open.blue <- function(
                           type=NULL
                           )
 {
-    
+    blueprint %>% normalised.path.and.dir.exists  -> blueprint
     if(!file.exists(blueprint)){
         c('var','file','fun','link') -> varnams
     c('newvar',paste0(rep(varnams,times=waves),sort(rep((1:waves),times=4))))-> varnams
@@ -425,11 +438,11 @@ open.blue <- function(
         a.df[1,c(5+4*((1:waves)-1))]<-'^\n
 |\n
 v\n'
-    a.df[3,1:5] <- description
+        a.df[3,1:5] <- description
     a.df %>% export(file=blueprint)
     cat(paste0('Written blueprint template to file ',blueprint,'.\n'))
     }
-    openFILE <- function(x) browseURL(paste0('file://', blueprint))
+    openFILE <- function(x) browseURL(paste0('file://', x))
     openFILE(blueprint)
     invisible(blueprint)
     }
