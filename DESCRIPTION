@@ -11,4 +11,4 @@ Description: The R-package blueprint offers the opportunity to select, combine
     or text editor that can e.g. save the file formats OpenOffice Calc, Excel, CSV,
     HTML.
 License: GPL (>= 2)
-RoxygenNote: 5.0.1
+Depends: plyr,dplyr,stringr,rio,logging,stargazer,Hmisc
