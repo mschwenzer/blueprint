@@ -1,3 +1,4 @@
+
 ## require(plyr)
 ## require(dplyr)
 ## require(stringr)  
@@ -6,9 +7,9 @@
 ## require(stargazer)
 ## require(Hmisc)    
 
-    blueprint.log.formatter <- function(record) {
-        text <- paste(paste0(' ',record$msg, sep=' '))
-        }
+blueprint.log.formatter <- function(record) {
+text <- paste(paste0(record$msg, sep=' '))
+}
 
 
 normalised.path.and.dir.exists <- function(filepath)
@@ -16,12 +17,18 @@ normalised.path.and.dir.exists <- function(filepath)
     suppressWarnings(
         filepath %>% normalizePath  -> filepath
     )
-    suppressWarnings(    
-                                        # Will stop and print error if directory does not exist        
-        filepath %>% dirname %>% normalizePath(mustWork=TRUE)
-    )
+    if(dir.exists(filepath)){stop(paste0('Filepath `',the.dir,'` is an exisiting directory. Specify a valid path where the blueprint template will be created. '))}
+    filepath  %>% dirname  -> the.dir
+                                        # Will stop and print error if directory does not exist            
+    the.dir %>% dir.exists(.) %>% if(`!`(.)){stop(paste0('Directory `',the.dir,'` does not exist. Specify a valid path where the blueprint template will be created. '))}
     return(filepath)
-}
+    }
+
+
+
+
+
+
 
 
 attrs.as.factor <- function (x)
@@ -51,33 +58,33 @@ attrs.as.factor <- function (x)
  }
 
 
-
-
-load.and.recode <-
-function(df,fun=TRUE,wave=1,extended=TRUE,debug=FALSE)
+load.and.recode <- function(blueprint,fun=TRUE,wave=1,extended=TRUE,debug=FALSE)
                           {
                                         #                         cat('recs:\n')
                                         #                          print(recs)
                               # find non-empty fun (rec) columns  / ❗️ replace by stringr::str_match / find out why it can be string "NA" which is a bug
-                              ((df$fun!='NA')&(!is.na(df$fun))&(!is.nan(df$fun)))  %>% which -> rep.pos
+                              ((blueprint$fun!='NA')&(!is.na(blueprint$fun))&(!is.nan(blueprint$fun)))  %>% which -> rep.pos
                               if(debug){   print(rep.pos)}
                               if(extended){
-                                  paste0(df$var[rep.pos],' %>% blueprint.variable.diff(fun="',df$fun[rep.pos],'",name="',df$var[rep.pos],'",wave="',wave,'")') -> df$var[rep.pos]
+                                  paste0(blueprint$var[rep.pos],' %>% blueprint.variable.diff(fun="',blueprint$fun[rep.pos],'",name="',blueprint$var[rep.pos],'",wave="',wave,'")') -> blueprint$var[rep.pos]
                               }
                               else{
-                                  paste0(df$var[rep.pos],' %>% ',df$fun[rep.pos]) -> df$var[rep.pos]
+                                  paste0(blueprint$var[rep.pos],' %>% ',blueprint$fun[rep.pos]) -> blueprint$var[rep.pos]
                                   }
-                              paste0(df$newvar,'=',df$var,collapse=',') -> transmute.code
+                              paste0(blueprint$newvar,'=',blueprint$var,collapse=',') -> transmute.code
                               # create a string that renames/selects with select and mutates afterwards
-                              paste0('rio::import("',df$file[1],'")',if(fun){paste0(' %>% dplyr::transmute(',transmute.code,')')}) -> eval.code
+                              paste0('rio::import("',blueprint$file[1],'")',if(fun){paste0(' %>% dplyr::transmute(',transmute.code,')')}) -> eval.code
 #                              print(eval.code)
                                         # execute and return
 #                              print(eval.code)
                               eval(parse(text=eval.code))
                           }
 
+
+
 process.links <- function(links)        {
-                                          lapply(links,function(link)
+    links %>% str_replace_all('"','') %>% str_replace_all("'","") %>% 
+                                          lapply(function(link)
                                                   {
                                                   if(is.na(link)){return(NA)}
                                                  link %>% stringr::str_split(',') %>%  .[[1]]  -> link
@@ -132,12 +139,13 @@ set.empty.values.to.NA <- function(blueprint)
 add.variables.specified.by.brackets <- function(blueprint)
 {
     ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
-  rowstoprocess <- blueprint[,1]
+    rowstoprocess <- blueprint[,1]
+    blueprint %>% names -> column.names
   while(length(
 ((blueprint[,1]) %>% stringr::str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
         >0))
           {
-              rowid <- ((blueprint[,1]) %>% stringr::str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+              rowid <- ((blueprint[,'newvar']) %>% stringr::str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
               if((rowid-1)>0){
                   frame.before <- blueprint[1:(rowid-1),]
               }
@@ -157,26 +165,35 @@ nums <- eval(parse(
                                function(x){
                                    to.process.vars %>% stringr::str_replace_all(pattern,x)
                 })
-               names(frame.toadd) <- names(frame.before)
+               names(frame.toadd) <- column.names
              assign('blueprint',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(blueprint)+1)){frame.after}),-1)
           }
     return(blueprint)
     }
 ###
+
+
+
+
+
 ## return.not.existing.files -----------------------------------------------------------
 return.not.existing.files <- function(blueprint)
       {
-          blueprint$file %>% unlist %>% c %>% unique %>% na.omit  -> files.to.check
-          plyr::llply(files.to.check,file.exists) %>% unlist %>% `!` %>% files.to.check[.]
+          blueprint[,'file'] %>% unlist %>% c %>% unique %>% na.omit  -> files.to.check
+          plyr::llply(files.to.check,function(x){
+              (!file.exists(x))|                    dir.exists(x)
+          }) %>% unlist          %>% files.to.check[.]
       }
 ###
 
 blueprint.remove.column.rows <- function(blueprint,debug=FALSE)
-    {
+{
+#    print(blueprint[,1])
         ## Remove comment rows -----------------------------------------------------------
-        stringr::str_detect(blueprint[,1],'^#.*') %>% which  -> commentrows
-    if(debug){print(commentrows)}
-        if (length(commentrows)>0){    blueprint[-commentrows,]  -> blueprint   }
+    llply(blueprint[,1],function(x){stringr::str_detect(x,'^ *#')})  %>% unlist %>% `!` -> not.commentrows
+    print(not.commentrows)
+    if(debug){cat('commentrows:',which(not.commentrows),'\n')}
+blueprint %>% filter(not.commentrows) -> blueprint   
         return(blueprint)
                                                      }
 
@@ -463,5 +480,23 @@ v\n'
     invisible(blueprint)
     }
 
+install.packages('XLConnect')
+library(XLConnect)
+writeWorksheetToFile(file = "/Users/eur/Desktop/BLUEPRINT.xlsx", data = data.frame(1:10) , sheet = "Blueprint1")
+
+
+
+readLines('/dsk/emailspider.txt') -> email
+email%>% str_detect('From') %>% which -> chunk.starts
+email%>% str_detect('to') %>% which -> chunk.ends
+emailfilter <- function(x){ x %>% str_replace(".*<",'')  %>% str_replace(">.*",'' %>% str_replace('To:','') %>% str_replace('From:','' %>% str_replace(' ','')))}
+data.frame(date=email[chunk.starts+1],from=email[chunk.starts],to=email[chunk.starts+2])  %>% mutate(from=from %>% emailfilter,
+                                                                                                     to=to %>% emailfilter)-> mail
+
+
+mail
+library(igraph)
+mail %>% tbl_df %>% select(from,to)%>%    graph_from_data_frame (vertices=NULL)  -> ag
+ag %>% degree(mode='in') %>% sort(decreasing=TRUE) %>% data.frame(rank=names(.)) %>% tbl_df %>% print(n=500)
 
 
