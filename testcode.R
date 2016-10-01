@@ -1,4 +1,5 @@
 library(tibble)
+library(testthat)
 ## Tests -----------------------------------------------------------
 ## ✅ normalised.path.and.dir.exists -----------------------------------------------------------
 expect_error(normalised.path.and.dir.exists('/dska/bla'))
@@ -45,6 +46,13 @@ tibble::tribble(
             ' #', 'asd#a', '//#','#okay', '#',
             's#', 'asd#a', '//#','#okay', '#'                        
         ) -> blueprint.a
+tibble::tribble(
+            ~newvar, ~var, ~file, ~link, ~fun,
+            'heinz', 'hoho', '/dsk/bla', 'a=4', 'asfjkljf %>% ',
+            '#', 'asd#a', '//#','#okay', '#',
+            ' #', 'asd#a', '//#','#okay', '#',
+            's#', 'asd#a', '//#','#okay', '#'                        
+        ) -> blueprint
 blueprint.a%>%blueprint.remove.column.rows
 
 
@@ -53,17 +61,24 @@ blueprint.a%>%blueprint.remove.column.rows
 ## return.df.with.certain.vars -----------------------------------------------------------
 
 tibble::tribble(
-            ~newvar, ~var, ~file, ~link, ~fun,
-            'heinz', 'hoho', '/dsk/bla', 'a=4', 'asfjkljf %>% ',
-            '#', 'asd#a', '//#','#okay', '#',
-            ' #', 'ajsd#a', '//#','#okay', '#',
-            's#', 'asd#a', '//#','#okay', '#'                        
+            ~newvar, ~var, ~file, ~link, ~fun, ~er,
+            'heinz', 'hoho', '/dsk/bla', 'a=4', 'asfjkljf','bla,
+            'a#', 'asd#a', '//#','#okay', '#','o'
+            '#', 'ajsd#a', '//#','#okay', '#','f',
+            '#', 'asd#a', '//#','#okay', '#'      ,'4d'                  
         ) -> blueprint.a
 
-blueprint.a%>%return.df.with.certain.vars
+
+expect_equal(    blueprint.a%>%return.df.with.certain.vars(file,link,fun,newvar,var) , blueprint.a[,c('file','link','fun','newvar','var')])
+
 
 
 ## df.set.standard.names -----------------------------------------------------------
+expect_equal(blueprint.a %>% df.set.standard.names %>% names,c('newvar','var','file','link','fun'))
+expect_equal(blueprint.a %>% df.set.standard.names,blueprint.a)
+data.frame(a=1:10) %>% return.df.with.certain.vars(newvar2,var3,file,link3,fun3) %>% df.set.standard.names %>% names %>% expect_equal(c('newvar','var','file','link','fun'))
+### non-standard chars
+data.frame(a=1:10) %>% return.df.with.certain.vars(newvar22,var3,file,link3,fun3)  %>% rename('🔴'=newvar22)%>% df.set.standard.names %>% names %>% expect_equal(c('newvar','var','file','link','fun'))
 
 ## blueprint.check.for.missing.files -----------------------------------------------------------
 

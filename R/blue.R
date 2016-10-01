@@ -59,27 +59,30 @@ attrs.as.factor <- function (x)
  }
 
 
-load.and.recode <- function(blueprint,fun=TRUE,wave=1,extended=TRUE,debug=FALSE)
+load.and.recode <- function(blueprint,fun=NULL,wave=1,debug=FALSE,extended=FALSE)
                           {
                                         #                         cat('recs:\n')
                                         #                          print(recs)
-                              # find non-empty fun (rec) columns  / ❗️ replace by stringr::str_match / find out why it can be string "NA" which is a bug
-                              ((blueprint$fun!='NA')&(!is.na(blueprint$fun))&(!is.nan(blueprint$fun)))  %>% which -> rep.pos
-                              if(debug){   print(rep.pos)}
-                              if(extended){
-                                  paste0(blueprint$var[rep.pos],' %>% blueprint.variable.diff(fun="',blueprint$fun[rep.pos],'",name="',blueprint$var[rep.pos],'",wave="',wave,'")') -> blueprint$var[rep.pos]
-                              }
-                              else{
-                                  paste0(blueprint$var[rep.pos],' %>% ',blueprint$fun[rep.pos]) -> blueprint$var[rep.pos]
+                                        # find non-empty fun (rec) columns  / ❗️ replace by stringr::str_match / find out why it can be string "NA" which is a bug
+                              if(class(fun)=='character')
+                                  {
+                                      ((blueprint$fun!='NA')&(!is.na(blueprint$fun))&(!is.nan(blueprint$fun)))  %>% which -> rep.pos
+                                      if(debug){   print(rep.pos)}
+                                      if(extended)
+                                          {
+                                              paste0(blueprint$var[rep.pos],' %>% blueprint.variable.diff(fun="',blueprint$fun[rep.pos],'",name="',blueprint$var[rep.pos],'",wave="',wave,'")') -> blueprint$var[rep.pos]
+                                              }
                                   }
                               paste0(blueprint$newvar,'=',blueprint$var,collapse=',') -> transmute.code
-                              # create a string that renames/selects with select and mutates afterwards
-                              paste0('rio::import("',blueprint$file[1],'")',if(fun){paste0(' %>% dplyr::transmute(',transmute.code,')')}) -> eval.code
+                                        # create a string that renames/selects with select and mutates afterwards
+                              paste0('rio::import("',blueprint$file[1],'")',paste0(' %>% dplyr::transmute(',transmute.code,')')) -> eval.code
 #                              print(eval.code)
                                         # execute and return
 #                              print(eval.code)
                               eval(parse(text=eval.code))
                           }
+
+
 
 
 
@@ -205,31 +208,35 @@ blueprint.log <- function(message){
     loginfo(message, logger="blueprint.logger")
 }
 ## return.df.with.certain.vars -----------------------------------------------------------
-return.df.with.certain.vars <- function(df,vars.to.get)
+return.df.with.certain.vars <- function(df,...,debug=0)
 {
-    # Return a data.frame containing certain variables also ordered by vars.to.get
-                          vars.to.get%in%names(df) %>% `!`  -> posis
-                          vars.to.get -> vars.to.get.new
-                          vars.to.get.new[posis]  %>% stringr::str_replace('$','=rep_len(NA_real_,nrow(df))') -> vars.to.get.new[posis]
-                          vars.to.get.new %>% paste0(collapse=',') %>%                               paste0('df %>% dplyr::transmute(',.,')')                      -> code.to.execute
+                                        # Return a data.frame containing certain variables also ordered by vars.to.get
+                                        # vars not in
+    eval(substitute(alist(...)))  %>%  sapply(toString)   -> vars.to.get
+    vars.to.get %>% plyr::llply(function(x){exists(x,df)}) %>% unlist   %>% `!` %>% which -> not.existing.pos
+    if (length(not.existing.pos>0))
+        {
+            vars.to.get[not.existing.pos]  %>% paste0(.,'=rep_len(NA_real_,nrow(df))') -> vars.to.get[not.existing.pos]
+            }
+    vars.to.get %>% paste0(collapse=',') %>%                               paste0('df %>% dplyr::transmute(',.,')')                      -> code.to.execute
                           eval(parse(text=code.to.execute))
 }
+
 ## df.set.standard.names -----------------------------------------------------------
 df.set.standard.names  <- function(df)
 {
     names(df)  -> df.names
     df.names %>% stringr::str_detect('var') %>% which -> df.var.columns
     'var'  -> df.names[df.var.columns]
-    'newvar'  -> df.names[1]            
     df.names %>% stringr::str_detect('file') %>% which -> df.file.columns
     'file'  -> df.names[df.file.columns]
     df.names %>% stringr::str_detect('link') %>% which -> df.link.columns
     'link'  -> df.names[df.link.columns]    
     df.names %>% stringr::str_detect('fun') %>% which -> df.fun.columns
     'fun'  -> df.names[df.fun.columns]
-    df.names %>% stringr::str_detect('newvaw|var|fun|file|link|""') %>% `!` -> df.var.columns
-    'var'  -> df.names[df.var.columns]
-    df.names -> names(df)
+    # lastly set newvar that has previous also been set to var
+    'newvar'  -> df.names[1]
+    df.names -> names(df)    
     return(df)
     }
 
@@ -292,29 +299,31 @@ blue <- function(
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)    
-    rio::import(file=blueprint,...) %>% blueprint.remove.column.rows %>% 
+    rio::import(file=blueprint,...) %>% blueprint.remove.column.rows %>%
+        # guarantee that all columns have the correct name, especially var used for cutting
         df.set.standard.names  -> blueprint
+    
     if(debug){print(blueprint)}
                                         # cut blueprint into waves
-
-
     data.frame(startcol=(names(blueprint)=='var') %>% which,
                # end column 
                endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                         # + the last column containing everything
                         length(names(blueprint)))) %>% dplyr::transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
-    
+    # Subset over the waves
     if(is.numeric(waves)){
         blueprints.column.info %>% dplyr::filter(.$wave%in%c(waves)) ->         blueprints.column.info
     }
     blueprints.column.info %>% dplyr::group_by(wave)   %>%
-                                        # -> reduced to a data.frame containing the selected waves and the rows
-        dplyr::do(blueprints={blueprint[,c(1,(.$startcol):(.$endcol))]  %>%
-                                        # normalise to a data.frame with these variables
-                      return.df.with.certain.vars(c('newvar','var','file','link','fun')) %>%
+                                        # -> reduced to a single-line data.frame containing the selected waves and the rows
+        dplyr::do(blueprints={blueprint[,c('newvar',(.$startcol):(.$endcol))]  %>%
+                                        # normalise to a data.frame with these variables / remove columns not named correct
+                                  return.df.with.certain.vars(c('newvar','var','file','link','fun')) %>%
+                                  # ❗️ to validate
                       add.variables.specified.by.brackets %>%
                       set.empty.values.to.NA  %>%
                       blueprint.validator})             -> blueprints
+    # blueprints: a data.frame with columns 'wave' and 'blueprints'
     if(debug){print(blueprint)}
     rm(blueprint)
 ## Validate all blueprints before something is done actually....     -----------------------------------------------------------q
@@ -326,24 +335,23 @@ blue <- function(
         wave <- .$wave[[1]]
         all.vars <-.$blueprints[[1]]$newvar
          ###
-blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
+        blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
                                         # get different unique filenames to process for each wave
-                          blueprint.files <- unique(blueprint$file)
+        blueprint.files <- unique(blueprint$file)
                                         # main file has to be the first specified file
-                          blueprint.main.file <- blueprint.files[1]
+        blueprint.main.file <- blueprint.files[1]
                                         # vars in main file that shall be kept
-                          vars.to.get <- blueprint$var
-        
-                                        # print(vars.to.get)
+        vars.to.get <- blueprint$var
+                                                # print(vars.to.get)
 ### Load main file ####################################################################################################
-                          blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
-                          blueprint$file %>% stringr::str_detect(blueprint.main.file)                          -> pos.main.file
-                          (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
-#df <- blueprint[pos.main.file,]
-if(debug)        {print(blueprint$wave                 )}
-                          blueprint[pos.main.file,] %>%
-                              load.and.recode(fun=fun,wave=wave,extended=extended) -> main.data
-cat('main.file...')         
+        blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
+        blueprint$file %>% stringr::str_detect(blueprint.main.file)                          -> pos.main.file
+        (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
+                                        #df <- blueprint[pos.main.file,]
+        if(debug)        {print(blueprint$wave                 )}
+        blueprint[pos.main.file,] %>%
+            load.and.recode(fun=fun,wave=wave,extended=extended) -> main.data
+        cat('main.file...')         
                                         # loaded and processed. remaining parts still to be processed
                           blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
 
