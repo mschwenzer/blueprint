@@ -362,17 +362,15 @@ blue <- function(
     if(is.numeric(waves)){
         blueprints.column.info %>% dplyr::filter(.$wave%in%c(waves)) ->         blueprints.column.info
     }
-    print(blueprints.column.info)
     blueprints.column.info %>% dplyr::group_by(wave)   %>%
                                         # -> reduced to a single-line data.frame containing the selected waves and the rows
         dplyr::do(blueprints={
 
             chunk.columns <- c(1,(.$startcol):(.$endcol))
-            print(chunk.columns)
-            if(.$wave==2)            browser()
+#            print(chunk.columns)
+#            if(.$wave==2)            browser()
             
-            blueprint[,chunk.columns]  -> blueprint
-            blueprint %>% 
+            blueprint[,chunk.columns]  %>% 
                                         # normalise to a data.frame with these variables / remove columns not named correct
                                   return.df.with.certain.vars(newvar,var,file,link,fun) %>%
                                   # ❗️ to validate
