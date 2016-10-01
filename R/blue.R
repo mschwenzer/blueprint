@@ -1,3 +1,4 @@
+source('/doc/wissenschaft/blueprint/R/blue.R')
 
 ## require(plyr)
 ## require(dplyr)
@@ -231,8 +232,7 @@ df.set.standard.names  <- function(df)
     df.names -> names(df)
     return(df)
     }
-## constant -----------------------------------------------------------
-constant <- function(x,y){y}
+
 blueprint.check.for.missing.files <- function(blueprint)
 {
         ## detect for missingness in files -----------------------------------------------------------
@@ -480,23 +480,7 @@ v\n'
     invisible(blueprint)
     }
 
-install.packages('XLConnect')
-library(XLConnect)
-writeWorksheetToFile(file = "/Users/eur/Desktop/BLUEPRINT.xlsx", data = data.frame(1:10) , sheet = "Blueprint1")
-
-
-
-readLines('/dsk/emailspider.txt') -> email
-email%>% str_detect('From') %>% which -> chunk.starts
-email%>% str_detect('to') %>% which -> chunk.ends
-emailfilter <- function(x){ x %>% str_replace(".*<",'')  %>% str_replace(">.*",'' %>% str_replace('To:','') %>% str_replace('From:','' %>% str_replace(' ','')))}
-data.frame(date=email[chunk.starts+1],from=email[chunk.starts],to=email[chunk.starts+2])  %>% mutate(from=from %>% emailfilter,
-                                                                                                     to=to %>% emailfilter)-> mail
-
-
-mail
-library(igraph)
-mail %>% tbl_df %>% select(from,to)%>%    graph_from_data_frame (vertices=NULL)  -> ag
-ag %>% degree(mode='in') %>% sort(decreasing=TRUE) %>% data.frame(rank=names(.)) %>% tbl_df %>% print(n=500)
-
+#install.packages('XLConnect')
+#library(XLConnect)
+#writeWorksheetToFile(file = "/Users/eur/Desktop/BLUEPRINT.xlsx", data = data.frame(1:10) , sheet = "Blueprint1")
 
