@@ -48,21 +48,57 @@ tibble::tribble(
 blueprint.a%>%blueprint.remove.column.rows
 
 
+## blueprint.log -----------------------------------------------------------
 
-blueprint%>% 
+## return.df.with.certain.vars -----------------------------------------------------------
+
+tibble::tribble(
+            ~newvar, ~var, ~file, ~link, ~fun,
+            'heinz', 'hoho', '/dsk/bla', 'a=4', 'asfjkljf %>% ',
+            '#', 'asd#a', '//#','#okay', '#',
+            ' #', 'ajsd#a', '//#','#okay', '#',
+            's#', 'asd#a', '//#','#okay', '#'                        
+        ) -> blueprint.a
+
+blueprint.a%>%return.df.with.certain.vars
+
+
+## df.set.standard.names -----------------------------------------------------------
+
+## blueprint.check.for.missing.files -----------------------------------------------------------
+
+## blueprint.check.for.duplicate.variable.names -----------------------------------------------------------
+
+## blueprint.validator -----------------------------------------------------------
 
 
 
+
+## blue -----------------------------------------------------------
+
+## open.blue -----------------------------------------------------------
+
+
+    
+
+## #################### Benchmarking and Optimisation -----------------------------------------------------------
 blueprint(which='MergeESS',waves=1:3,loggin=FALSE)  -> tes
 blueprint(which='MergePisa',waves=1,extended=1)
 blue(blueprint='/doc/140_Datenaufbereitung/pisa.xlsx',waves=1:5,extended=0,which='MergePisa') -> pisa
 library(microbenchmark)
-microbenchmark(blueprint(which='MergePisa',waves=1:5,logging=0))
+microbenchmark(blue(which='MergePisa',waves=1,extended=0),times=2)  -> dest
+dest %>% str
+
+
+### ✳️  blueprint.variable.diff
 
 tmp <- tempfile()
+Rprof(tmp, interval = 0.1)
+blue(which='MergePisa',waves=1,extended=0)
 Rprof(NULL)
 summaryRprof(tmp)
-Rprof(tmp, interval = 0.1)
+
+
 library(blueprint)
 import('my.blueprint.name.csv')
 %>%slice(1)%>%export('my.blueprint.name.csv')
