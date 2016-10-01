@@ -12,3 +12,4 @@ Description: The R-package blueprint offers the opportunity to select, combine
     HTML.
 License: GPL (>= 2)
 Depends: plyr,dplyr,stringr,rio,logging,stargazer,Hmisc
+Suggests: testthat

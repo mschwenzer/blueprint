@@ -1,3 +1,5 @@
+source('/doc/wissenschaft/blueprint/R/blue.R')
+
 library(tibble)
 library(testthat)
 ## Tests -----------------------------------------------------------
@@ -11,6 +13,13 @@ expect_error(normalised.path.and.dir.exists('/dsk/../../'))
 
 
 ## load.and.recode -----------------------------------------------------------
+tibble::tribble(
+            ~newvar, ~var, ~file, ~link, ~fun,
+            'asa','COUNTRY','/doc/wissenschaft/data/pisa/pisa2000/data r/intstud_read_v3.Rdata','','',
+            'school','SCHOOLID','/doc/wissenschaft/data/pisa/pisa2000/data r/intstud_read_v3.Rdata','',''
+        ) -> blueprint.with.file1
+blueprint.with.file1 %>% load.and.recode %>% tbl_df   %>% 
+
 
 ## process.links -----------------------------------------------------------
 expect_equal("'asd'='asdf'"  %>% process.links,"\"asd\"=\"asdf\"")
@@ -37,7 +46,7 @@ data.frame(newvar=c('bla[1:10]'),var=c('aha'),fun=c(1),file=c(''),link=c('',''))
 expect_equal(return.not.existing.files(data.frame(file=c('/dsk/','heinz.pdf','/dsk','~/.Rprofile'))),c('/dsk/','heinz.pdf','/dsk'))
 
 ## blueprint.remove.column.rows -----------------------------------------------------------
-data.frame(newvar='bla',var='heinz',file='ahaha.xlsx',link='a=b',fun=' %>%  %>% #') -> blueprint
+
 
 tibble::tribble(
             ~newvar, ~var, ~file, ~link, ~fun,
@@ -54,8 +63,9 @@ tibble::tribble(
             's#', 'asd#a', '//#','#okay', '#'                        
         ) -> blueprint
 blueprint.a%>%blueprint.remove.column.rows
-
-
+data.frame(1:10,1:10,1:10,1:10,1:10,1:10) -> blueprint.b
+c('var','var','link','link','newvar','fun') -> names(blueprint.b)
+blueprint.b%>%blueprint.remove.column.rows
 ## blueprint.log -----------------------------------------------------------
 
 ## return.df.with.certain.vars -----------------------------------------------------------
@@ -77,6 +87,9 @@ expect_equal(    blueprint.a%>%return.df.with.certain.vars(file,link,fun,newvar,
 expect_equal(blueprint.a %>% df.set.standard.names %>% names,c('newvar','var','file','link','fun'))
 expect_equal(blueprint.a %>% df.set.standard.names,blueprint.a)
 data.frame(a=1:10) %>% return.df.with.certain.vars(newvar2,var3,file,link3,fun3) %>% df.set.standard.names %>% names %>% expect_equal(c('newvar','var','file','link','fun'))
+data.frame(a=1:10) %>% return.df.with.certain.vars(newvar2,var3,file,link3,myfun,old,brain,lose) %>% df.set.standard.names
+
+
 ### non-standard chars
 data.frame(a=1:10) %>% return.df.with.certain.vars(newvar22,var3,file,link3,fun3)  %>% rename('🔴'=newvar22)%>% df.set.standard.names %>% names %>% expect_equal(c('newvar','var','file','link','fun'))
 
@@ -85,11 +98,15 @@ data.frame(a=1:10) %>% return.df.with.certain.vars(newvar22,var3,file,link3,fun3
 ## blueprint.check.for.duplicate.variable.names -----------------------------------------------------------
 
 ## blueprint.validator -----------------------------------------------------------
+# ✳️: : validator for funs
 
-
-
+blue(blueprint='/doc/140_Datenaufbereitung/pisa.xlsx',waves=1,which='MergePisa',codefile='/dsk/code.txt') -> pisa
 
 ## blue -----------------------------------------------------------
+
+
+blue(blueprint='/doc/140_Datenaufbereitung/pisa.xlsx',waves=1,which='MergePisa',codefile='/dsk/code.txt') -> pisa
+
 
 ## open.blue -----------------------------------------------------------
 
