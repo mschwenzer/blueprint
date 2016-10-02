@@ -47,11 +47,10 @@ capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% p
 make.bind.code <- function(dfs,data.table=TRUE){
     if(data.table)
     {
-        paste0('library(data.table)\nsample.list <- list(',paste0(dfs,collapse=','),')
-invisible(lapply(sample.list, setattr, name = "class",
-                         value = c("data.table",  "data.frame")))
-                                        # combine into a big data set
-         rbindlist(sample.list) -> final.df')
+        paste0('library(data.table)\nlist(',paste0(dfs,collapse=','),')  %>% 
+         lapply(setattr, name = "class",
+                         value = c("data.table",  "data.frame")) %>% 
+         rbindlist(use.names=TRUE, fill=TRUE) -> final.df')
         }
 }
 
@@ -373,6 +372,7 @@ blue <- function(
                       logfile=FALSE,                      
                       fun=TRUE,
                  extended=FALSE,
+                 data.table=TRUE,
                           ...
     ){
                                         # requirements
@@ -390,7 +390,7 @@ blue <- function(
 
         addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
-    start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n')
+    start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n\n')
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
@@ -438,7 +438,9 @@ blue <- function(
                                         #➤ if(debug){print(blueprints) }
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
-        blueprint.code.log(return.diff.code())
+    if(data.table){blueprint.code.log('require(data.table)')}
+    blueprint.code.log('require(dplyr)')
+    blueprint.code.log(return.diff.code())
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
 
     code.time <- Sys.time()    
@@ -472,7 +474,6 @@ blue <- function(
         blueprint$newvar %>% na.omit    -> main.data.var
         blueprint.code.log(code.to.execute)
         # 🔴 eval(parse(text=code.to.execute)) -> main.data
-        cat('main.file...')         
                                         # loaded and processed. remaining parts still to be processed
         blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),] -> blueprint
 ### restrict to variables that are specified by a file reference ❗️ should be: also a link
@@ -483,7 +484,6 @@ blue <- function(
                               for(x in unique(blueprint$file) )
                               {
                                   blueprint.log(paste0('--- Adding additional variables from file:',x,'\n'))
-cat('add.file...')
 
                                         #x <- unique(blueprint$files)[1]
                                         #print(blueprint)
@@ -547,7 +547,8 @@ cat('add.file...')
                           }
         paste0('data.wave',wave) -> df.wave.name
         return.code.to.return.df.with.certain.vars_(all.vars,missing.var.pos) -> select.code
-        paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
+                                        #        paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
+                paste0('main.data  %>%  mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
         # eval(parse(text=code.to.execute))
         blueprint.code.log(code.to.execute)
         if(wave==1)
@@ -570,12 +571,12 @@ cat('add.file...')
 
     
 #    blueprint.code.log(code.to.execute)
-    
+    blueprint.code.log('final.df %>% tbl_df -> final.df')
                                         #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
-    cat(paste0('Time elapsed for code.file: ',format(Sys.time()- code.time,unit='sec'),'\n\n'))
+    cat(paste0('\nTime elapsed for code.file: ',format(Sys.time()- code.time,unit='sec'),'\n\n'))
     eval.time <- Sys.time()
     source(codefile)
-    cat(paste0('Time elapsed for execution: ',format(Sys.time()- eval.time,unit='sec'),'\n\n'))
+    cat(paste0('\nTime elapsed for execution: ',format(Sys.time()- eval.time,unit='sec'),'\n\n\n'))
     blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
