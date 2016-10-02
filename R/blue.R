@@ -387,7 +387,7 @@ blue <- function(
             }
     if(logfile==blueprint)
     {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argument or change it.')}
-
+    if(file.exists(codefile)){unlink(logfile)}    
         addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
     start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n\n')
@@ -396,7 +396,8 @@ blue <- function(
     blueprint.log(start.message)
     stringr::str_replace(blueprint,'\\.....+$','.code.R') -> codefile
                                         # ❗️ check for path consistency
-        if(file.exists(codefile)){unlink(codefile)}
+    if(file.exists(codefile)){unlink(codefile)}
+
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
     ## Import and validate blueprint -----------------------------------------------------------
     rio::import(file=blueprint,...) %>% blueprint.remove.column.rows    %>%
