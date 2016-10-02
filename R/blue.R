@@ -241,19 +241,20 @@ return.df.with.certain.vars <- function(df,...,debug=0)
 }
 
 
-return.code.to.return.df.with.certain.vars_ <- function(missing.vars,debug=0)
+return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos,debug=0)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
 
-#    print(vars.to.get[not.existing.pos])
-    if (length(missing.vars>0))
+                                        #    print(vars.to.get[not.existing.pos])
+    transmute.vars <- all.vars
+    if (length(missing.var.pos>0))
         {
                                         #            missing.vars  %>% paste0(.,'=rep_len(NA_real_,nrow(.))') -> transmute.code
-            missing.vars  %>% paste0(.,'=NA_real_') -> transmute.code            
+            transmute.vars[missing.var.pos]  %>% paste0(.,'=NA_real_') -> transmute.vars[missing.var.pos]
         }
-#    print(vars.to.get)
-    transmute.code %>% paste0(collapse=',\n                               ') %>% paste0('dplyr::mutate(',.,')')                      -> code.to.execute
+                                        #    print(vars.to.get)
+    transmute.vars %>% paste0(collapse=',\n                               ') %>% paste0('dplyr::transmute(',.,')')                      -> code.to.execute
  #   print(code.to.execute)
                           return(code.to.execute)
 }
@@ -391,8 +392,10 @@ blue <- function(
                         blueprint.code.log(paste0('### wave ',wave))
                 blueprint.code.log('\nprint(p$tick()$print())\n')
 
-        all.vars <-blueprint$newvar
-        is.na(blueprint$var) %>% which %>% all.vars[.] -> missing.vars
+        blueprint$newvar -> all.vars
+        is.na(blueprint$var) %>% which -> missing.var.pos
+        cat('blueprint$newvar:\n',blueprint$newvar)        
+        cat('blueprint$var:\n',blueprint$var)
          ###
         blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
                                         # get different unique filenames to process for each wave
@@ -487,7 +490,7 @@ cat('add.file...')
          
                           }
         paste0('data.wave',wave) -> df.wave.name
-        return.code.to.return.df.with.certain.vars_(missing.vars) -> select.code
+        return.code.to.return.df.with.certain.vars_(all.vars,missing.var.pos) -> select.code
         paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
         # eval(parse(text=code.to.execute))
         blueprint.code.log(code.to.execute)
