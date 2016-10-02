@@ -1,5 +1,8 @@
 
 
+
+
+
 ## require(plyr)
 ## require(dplyr)
 ## require(stringr)  
@@ -53,13 +56,13 @@ attrs.as.factor <- function (x)
                                         #     rownames(cats) <- NULL
     paste0('x %>% dplyr::recode(',recod,') %>% as.factor-> x') -> code.to.eval
 #    print(code.to.eval)
-    eval(parse(text=code.to.eval))
+     #eval(parse(text=code.to.eval))
     return(x)
 #     attr(x, "label") <- the.label
  }
 
 
-load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALSE,codelog=FALSE)
+load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALSE)
                           {
                                         #                         cat('recs:\n')
                                         #                          print(recs)
@@ -77,14 +80,13 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALS
                                           paste0(blueprint$var[rep.pos],' %>% ',blueprint$fun[rep.pos]) -> blueprint$var[rep.pos]
                                       }
                                   }
-                              paste0(blueprint$newvar,'=',blueprint$var,collapse=',\n') -> transmute.code
+                              paste0(blueprint$newvar,'=',blueprint$var,collapse=',\n                         ') -> transmute.code
                                         # create a string that renames/selects with select and mutates afterwards
-                              paste0('rio::import("',blueprint$file[1],'")',paste0(' %>% dplyr::transmute(',transmute.code,')')) -> code.to.execute
+                              paste0('rio::import("',blueprint$file[1],'")',paste0(' %>%\n        dplyr::transmute(',transmute.code,')')) -> code.to.execute
 #                              print(eval.code)
                                         # execute and return
                                         #                              print(eval.code)
-                                  if(codelog){blueprint.code.log(code.to.execute)}                              
-                              eval(parse(text=code.to.execute))
+                              return(code.to.execute)
                           }
 
 
@@ -232,27 +234,26 @@ return.df.with.certain.vars <- function(df,...,debug=0)
             vars.to.get[not.existing.pos]  %>% paste0(.,'=rep_len(NA_real_,nrow(df))') -> vars.to.get[not.existing.pos]
         }
 #    print(vars.to.get)
-    vars.to.get %>% paste0(collapse=',\n') %>%                               paste0('df %>% dplyr::transmute(',.,') -> df')                      -> code.to.execute
+    vars.to.get %>% paste0(collapse=',\n                                     ') %>%                               paste0('df %>% dplyr::transmute(',.,') -> df')                      -> code.to.execute
 #    print(code.to.execute)
     eval(parse(text=code.to.execute))
     return(df)
 }
 
 
-return.code.to.return.df.with.certain.vars_ <- function(df,vars.to.get,debug=0)
+return.code.to.return.df.with.certain.vars_ <- function(missing.vars,debug=0)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
 
-#    print(vars.to.get)
-    vars.to.get %>% plyr::llply(function(x){exists(x,df)}) %>% unlist   %>% `!` %>% which -> not.existing.pos
 #    print(vars.to.get[not.existing.pos])
-    if (length(not.existing.pos>0))
+    if (length(missing.vars>0))
         {
-            vars.to.get[not.existing.pos]  %>% paste0(.,'=rep_len(NA_real_,nrow(.))') -> vars.to.get[not.existing.pos]
+                                        #            missing.vars  %>% paste0(.,'=rep_len(NA_real_,nrow(.))') -> transmute.code
+            missing.vars  %>% paste0(.,'=NA_real_') -> transmute.code            
         }
 #    print(vars.to.get)
-    vars.to.get %>% paste0(collapse=',') %>%                               paste0('dplyr::transmute(',.,')')                      -> code.to.execute
+    transmute.code %>% paste0(collapse=',\n                               ') %>% paste0('dplyr::mutate(',.,')')                      -> code.to.execute
  #   print(code.to.execute)
                           return(code.to.execute)
 }
@@ -317,37 +318,30 @@ blue <- function(
                       logfile=FALSE,                      
                       fun=TRUE,
                  extended=FALSE,
-                 codefile=FALSE,
-                      ...
+                          ...
     ){
                                         # requirements
                                         # Load Merge Data from XLS
 
-    if(debug){cat(paste0('file: ',blueprint))}
+                                        # if(debug){cat(paste0('file: ',blueprint))}
+    ## Logfile -----------------------------------------------------------
+    ## Make default logfile path if missing logfile
     if(!logfile)
         {
             stringr::str_replace(blueprint,'\\.....+$','.log.txt') -> logfile
             }
     if(logfile==blueprint)
-    {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argumet or change it.')}
-
+    {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argument or change it.')}
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
-    if(debug){print('logger created')}
+                                        # if(debug){print('logger created')}
     start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n')
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
-    if(is.character(codefile))
-    {
-                                        # ❗️ check for path consistency
-        addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
-        codelog=TRUE
-    }
-    else
-        {
-            codelog=FALSE
-        }
-    
+    stringr::str_replace(blueprint,'\\.....+$','.code.R') -> codefile
+                                            # ❗️ check for path consistency
+    addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
+    ## Import and validate blueprint -----------------------------------------------------------
     rio::import(file=blueprint,...) %>% blueprint.remove.column.rows    %>%
         # guarantee that all columns have the correct name, especially var used for cutting
         df.set.standard.names  -> blueprint
@@ -375,20 +369,30 @@ blue <- function(
                                   return.df.with.certain.vars(newvar,var,file,link,fun) %>%
                                   # ❗️ to validate
                       add.variables.specified.by.brackets %>%
-                      set.empty.values.to.NA  %>%
+                set.empty.values.to.NA  %>%
+                ## Validate all blueprints before something is done actually.... 
                       blueprint.validator})             -> blueprints
-    # blueprints: a data.frame with columns 'wave' and 'blueprints'
-    if(debug){print(blueprint)}
-    rm(blueprint)
-## Validate all blueprints before something is done actually....     -----------------------------------------------------------q
-    if(debug){print(blueprints) }
+    rm(blueprint)    
+                                        # blueprints: a data.frame with columns 'wave' and 'blueprints'
+    ## Convert blueprints to code -----------------------------------------------------------
+                                        #➤ if(debug){print(blueprint)}
+
+
+                                        #➤ if(debug){print(blueprints) }
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
+    
+    blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
+
     
     blueprints %>% dplyr::group_by(wave) %>% dplyr::do(dfs={
         blueprint <- .$blueprints[[1]]
         wave <- .$wave[[1]]
-        all.vars <-.$blueprints[[1]]$newvar
+                        blueprint.code.log(paste0('### wave ',wave))
+                blueprint.code.log('\nprint(p$tick()$print())\n')
+
+        all.vars <-blueprint$newvar
+        is.na(blueprint$var) %>% which %>% all.vars[.] -> missing.vars
          ###
         blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
                                         # get different unique filenames to process for each wave
@@ -400,20 +404,22 @@ blue <- function(
                                                 # print(vars.to.get)
 ### Load main file ####################################################################################################
         blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
-        blueprint$file %>% stringr::str_detect(blueprint.main.file)                          -> pos.main.file
-        (pos.main.file & (pos.main.file %>% is.na %>% `!`))                           -> pos.main.file
-                                        #df <- blueprint[pos.main.file,]
-        if(debug)        {print(blueprint$wave                 )}
+        blueprint$file %>% stringr::str_detect(blueprint.main.file)  -> pos.main.file
+        (pos.main.file & (pos.main.file %>% is.na %>% `!`)) -> pos.main.file
+                                        #➤ if(debug)        {print(blueprint$wave                 )}
         blueprint[pos.main.file,] %>%
-            load.and.recode(fun=fun,wave=wave,extended=extended,codelog=codelog) -> main.data
+            load.and.recode(fun=fun,wave=wave,extended=extended) -> code.to.execute
+        paste0(code.to.execute,'  -> main.data') -> code.to.execute
+        blueprint$newvar %>% na.omit    -> main.data.var
+        blueprint.code.log(code.to.execute)
+        # 🔴 eval(parse(text=code.to.execute)) -> main.data
         cat('main.file...')         
                                         # loaded and processed. remaining parts still to be processed
-                          blueprint <- blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),]
-
+        blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),] -> blueprint
 ### restrict to variables that are specified by a file reference ❗️ should be: also a link
-
 ### Add the additional files  ####################################################################################################
-         if(debug){       print(all.vars)}
+                if(debug){       print(all.vars)}
+                if(debug) {print(blueprint$file)}
                           if(length(blueprint$file)>0){
                               for(x in unique(blueprint$file) )
                               {
@@ -424,45 +430,40 @@ cat('add.file...')
                                         #print(blueprint)
                                         # variabels to replace in original frame
 
-                                      add.blueprint <- blueprint[blueprint$file==x,]
-                                      
-#                                      new.vars <- ,'newvars']
+                                  blueprint[blueprint$file==x,] -> add.blueprint
                                         # variables that replace in replacement frame
-                                      the.vars <- add.blueprint[,'var']
+                                  the.vars <- add.blueprint[,'var']
                                         #print(the.vars)##
                                   links <-add.blueprint[,'link']
                                         #print(blueprint)
-                                      functions <-add.blueprint[,'fun']
-                                      if(sum(is.na(links)&!is.na(the.vars))>0)
-                                          {
-                                              stop(paste('You have to specify links for the variables\n',paste(the.vars,collapse=',')))
-                                          }
+                                  functions <-add.blueprint[,'fun']
+                                  if(sum(is.na(links)&!is.na(the.vars))>0)
+                                  {
+                                      stop(paste('You have to specify links for the variables\n',paste(the.vars,collapse=',')))
+                                  }
       
                           
-
-                          
-
-
                                   add.blueprint$link %>% stringr::str_split(',') %>% plyr::llply(.,function(x){x %>% stringr::str_replace('^.*=','')})  -> to.links                                      
 # find link variables not specified in blueprints
-                                      ((to.links %>% unlist %>% unique)    %in% add.blueprint$newvar) %>% `!` -> pos
-                                      (to.links %>% unlist %>% unique)[pos] -> vars.to.add
-if(debug){cat('vars.to.add:\n',vars.to.add)}
-                                                            links %>% process.links -> link.condition
-                          #        paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
+                                  ((to.links %>% unlist %>% unique)    %in% add.blueprint$newvar) %>% `!` -> pos
+                                  (to.links %>% unlist %>% unique)[pos] -> vars.to.add
+                                  if(debug){cat('vars.to.add:\n',vars.to.add)}
+                                  links %>% process.links -> link.condition
+                                        #        paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
          #                         link.condition
          #                         add vars.to.add to add.blueprint : 
 
-                                  rbind(add.blueprint                           ,data.frame(newvar=vars.to.add,var=vars.to.add,file=rep_len(NA,length(vars.to.add)),link=rep_len(NA,length(vars.to.add)),fun=rep_len(NA,length(vars.to.add)))) -> add.blueprint
+
+                                  rbind(add.blueprint,data.frame(newvar=vars.to.add,var=vars.to.add,file=rep_len(NA,length(vars.to.add)),link=rep_len(NA,length(vars.to.add)),fun=rep_len(NA,length(vars.to.add)))) -> add.blueprint
 
 #### merge the data
-                                  add.blueprint %>% load.and.recode(fun=fun,wave=wave,extended=extended,codelog=codelog)  -> data.add
-
-#                                  paste0('left_join(current.data,data.add,by=c(',link.condition,')) %>% select(',paste0('-',to.links,collapse=','),')') %>% parse(text=.) %>% eval  -> current.data
-                                  paste0('dplyr::left_join(main.data,data.add,by=c(',link.condition,'))') -> code.to.execute
+                                  add.blueprint %>% load.and.recode(fun=fun,wave=wave,extended=extended)  -> code.to.execute
+                                  paste0(code.to.execute,' -> data.add') -> code.to.execute
+                                  blueprint.code.log(code.to.execute)
+                                  paste0('\n\ndplyr::left_join(main.data,data.add,by=c(',link.condition[1],'))  -> main.data\n\nrm(data.add)\n\n') -> code.to.execute
                                         # codelog
-                                  if(codelog){blueprint.code.log(code.to.execute)}
-                                  eval(parse(text=code.to.execute))  -> main.data
+                                  blueprint.code.log(code.to.execute)
+                                        #🔴 eval(parse(text=code.to.execute))
                                   }
                                       ## codestoexecute <- which(blueprint$file==x&(grepl('`',blueprint$vars,perl=TRUE)))
                                       ## for(a.row in codestoexecute)
@@ -485,18 +486,21 @@ if(debug){cat('vars.to.add:\n',vars.to.add)}
 #                                  cat('####################################################################################################\n')
          
                           }
-        
-        main.data %>% return.code.to.return.df.with.certain.vars_(c('wave',all.vars)) -> select.code
-        paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> main.data') -> code.to.execute
-        eval(parse(text=code.to.execute))
-        if(codelog){blueprint.code.log(code.to.execute)}
-        return(main.data)
+        paste0('data.wave',wave) -> df.wave.name
+        return.code.to.return.df.with.certain.vars_(missing.vars) -> select.code
+        paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
+        # eval(parse(text=code.to.execute))
+        blueprint.code.log(code.to.execute)
+        return(df.wave.name)
     }) -> blueprints.data
 
-            if(debug){print(blueprints.data)}
-                                        #    blueprints.data    %>% do.call(rbind,.$dfs) -> final.df
-    blueprints.data$dfs  -> dfs
-    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
+                                        # if(debug){print(blueprints.data)}
+    blueprints.data$dfs  %>% unlist  -> dfs
+    paste0('rbind(',paste0(dfs,collapse=',          \n'),')   %>% tbl_df  -> final.df') -> code.to.execute
+    blueprint.code.log(code.to.execute)
+    
+                                        #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
+    source(codefile)
     blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
