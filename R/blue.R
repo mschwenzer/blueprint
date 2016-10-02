@@ -387,7 +387,7 @@ blue <- function(
             }
     if(logfile==blueprint)
     {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argument or change it.')}
-    if(file.exists(codefile)){unlink(logfile)}    
+    if(file.exists(logfile)){unlink(logfile)}    
         addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
     start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n\n')
