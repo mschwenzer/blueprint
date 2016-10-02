@@ -1,5 +1,59 @@
+return.diff.code <- function()
+{
+"
+blueprint.log <- function(message){
+
+    loginfo(message, logger='blueprint.logger')
+}
+
+blueprint.log.formatter <- function(record) {
+text <- paste(paste0(record$msg, sep=' '))
+}
+
+blueprint.variable.diff <- function(variable,funs,name='',wave='')
+{
+    blueprint.log('')
+    blueprint.log(Sys.time())
+    blueprint.log('')
+blueprint.log        (paste0('----Transformation of variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
+    variable %>% duplicated %>% `!`  %>% which  -> old.pos
+    variable[old.pos] -> kept.levels.of.variable
+    class(variable) -> old.type
+    extended <- length(kept.levels.of.variable)<40
+if(extended)
+    {
+            plyr::llply(kept.levels.of.variable,function(x){stringr::str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
+            }
+    eval(parse(text=paste0('variable %>% ',funs)))  -> variable
+    class(variable) -> new.type
+    if(extended){
+    data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% dplyr::arrange(old)  ->     printfr
+    
+capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
+                            if(new.type!=old.type){
+                                blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Was this intended?'))
+                            }
+    blueprint.log('')
+    blueprint.log('')    
+    blueprint.log('   >>> Distribution after recoding -----\n')                            
+    capture.output(x=print(Hmisc::describe.vector(variable)),file=NULL) %>% blueprint.log
+    return(variable)
+}"
+}
 
 
+
+
+make.bind.code <- function(dfs,data.table=TRUE){
+    if(data.table)
+    {
+        paste0('library(data.table)\nsample.list <- list(',paste0(dfs,collapse=','),')
+invisible(lapply(sample.list, setattr, name = "class",
+                         value = c("data.table",  "data.frame")))
+                                        # combine into a big data set
+         rbindlist(sample.list) -> final.df')
+        }
+}
 
 
 
@@ -333,7 +387,7 @@ blue <- function(
             }
     if(logfile==blueprint)
     {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argument or change it.')}
-    if(file.exists(logfile)){unlink(logfile)}
+
         addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
     start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n')
@@ -341,7 +395,8 @@ blue <- function(
     blueprint.log(Sys.time())
     blueprint.log(start.message)
     stringr::str_replace(blueprint,'\\.....+$','.code.R') -> codefile
-                                            # ❗️ check for path consistency
+                                        # ❗️ check for path consistency
+        if(file.exists(codefile)){unlink(codefile)}
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
     ## Import and validate blueprint -----------------------------------------------------------
     rio::import(file=blueprint,...) %>% blueprint.remove.column.rows    %>%
@@ -383,7 +438,7 @@ blue <- function(
                                         #➤ if(debug){print(blueprints) }
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
-    
+        blueprint.code.log(return.diff.code())
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
 
     code.time <- Sys.time()    
@@ -495,17 +550,32 @@ cat('add.file...')
         paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
         # eval(parse(text=code.to.execute))
         blueprint.code.log(code.to.execute)
+        if(wave==1)
+        {
+            paste0(df.wave.name,' -> final.df') -> code.to.execute
+            }
+            else
+            {
+                c('final.df',df.wave.name) %>% make.bind.code(data.table=TRUE)  -> code.to.execute
+            }
+        code.to.execute %>% paste0(.,'\nrm(',df.wave.name,')') -> code.to.execute
+        blueprint.code.log(code.to.execute)
         return(df.wave.name)
     }) -> blueprints.data
 
                                         # if(debug){print(blueprints.data)}
     blueprints.data$dfs  %>% unlist  -> dfs
-    paste0('rbind(',paste0(dfs,collapse=',          \n'),')   %>% tbl_df  -> final.df') -> code.to.execute
-    blueprint.code.log(code.to.execute)
+    
+                                        # paste0('rbind(',paste0(dfs,collapse=',          \n'),')   %>% tbl_df  -> final.df') -> code.to.execute
+
+    
+#    blueprint.code.log(code.to.execute)
     
                                         #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
-    cat(paste0('Time elapsed for code.file: ',Sys.time()- code.time,'\n\n'))
+    cat(paste0('Time elapsed for code.file: ',format(Sys.time()- code.time,unit='sec'),'\n\n'))
+    eval.time <- Sys.time()
     source(codefile)
+    cat(paste0('Time elapsed for execution: ',format(Sys.time()- eval.time,unit='sec'),'\n\n'))
     blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
