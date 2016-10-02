@@ -333,7 +333,8 @@ blue <- function(
             }
     if(logfile==blueprint)
     {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argument or change it.')}
-    addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
+    if(file.exists(logfile)){unlink(logfile)}
+        addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
     start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'  \nStarting merge processes...\n')
     cat(start.message)
@@ -385,7 +386,7 @@ blue <- function(
     
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
 
-    
+    code.time <- Sys.time()    
     blueprints %>% dplyr::group_by(wave) %>% dplyr::do(dfs={
         blueprint <- .$blueprints[[1]]
         wave <- .$wave[[1]]
@@ -394,8 +395,8 @@ blue <- function(
 
         blueprint$newvar -> all.vars
         is.na(blueprint$var) %>% which -> missing.var.pos
-        cat('blueprint$newvar:\n',blueprint$newvar)        
-        cat('blueprint$var:\n',blueprint$var)
+#        cat('blueprint$newvar:\n',blueprint$newvar)        
+#        cat('blueprint$var:\n',blueprint$var)
          ###
         blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
                                         # get different unique filenames to process for each wave
@@ -503,24 +504,12 @@ cat('add.file...')
     blueprint.code.log(code.to.execute)
     
                                         #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
+    cat(paste0('Time elapsed for code.file: ',Sys.time()- code.time))
     source(codefile)
     blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
     blueprint.log(paste('Finally ready. Merged data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
-
-                                        #    b  cat('Building data.frame for variables (newnames):\n')
-#
-                               # do for every wave (additional colums)
-    
-## ldply(
-##                        # first wave vars are in second column , every addtional wave is 4 columns right of this column
-##                       2+(0:(waves-1))*4,
-##                       function(wavecolumn){
-##                                         # isolate a data.frame, that contains the variable identifier (col1) and the columns of the current wave
-
-    ##                       }  %>% as_data_frame   -> data}})
-    
     if(is.character(out_file)){
         cat(paste0('\nexporting to file: ',out_file,'\n'))
         rio::export(final.df,file=out_file)
@@ -555,8 +544,4 @@ v\n'
     browseURL(paste0('file://', blueprint))
     invisible(blueprint)
     }
-
-#install.packages('XLConnect')
-#library(XLConnect)
-#writeWorksheetToFile(file = "/Users/eur/Desktop/BLUEPRINT.xlsx", data = data.frame(1:10) , sheet = "Blueprint1")
 
