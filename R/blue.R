@@ -443,11 +443,10 @@ blue <- function(
     blueprint.code.log('require(dplyr)')
     blueprint.code.log(return.diff.code())
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
-
-    code.time <- Sys.time()    
-    blueprints %>% dplyr::group_by(wave) %>% dplyr::do(dfs={
-        blueprint <- .$blueprints[[1]]
-        wave <- .$wave[[1]]
+    code.time <- Sys.time()
+    blueprints %>% dplyr::do(dfs={
+                blueprint <- .$blueprints
+        wave <- .$wave
                         blueprint.code.log(paste0('### wave ',wave))
                 blueprint.code.log('\nprint(p$tick()$print())\n')
 
