@@ -1,30 +1,63 @@
-df.check.standard.names  <- function(df)
+
+
+blueprint.check.every.specified.original.var.has.a.file  <- function(df)
 {
+    df$var %>% is.na %>% `!` %>% which  -> missing.in.var
+    df$file[missing.in.var] %>% is.na %>% which -> also.missing.in.file
+    if(length(also.missing.in.file)>0)
+    {
+        stop(paste0('Missing files for specified variables:\n'),paste0('var: ',df$var[(missing.in.var[also.missing.in.file])],' -> newvar: ',df$newvar[(missing.in.var[also.missing.in.file])],collapse='\n'))}
+            return(df)
+    }
+
+df.remove.non.standard.named.columns  <- function(df)
+{
+    ## remove empty colums
+    standard.names <- c('newvar','link','var','file','fun')
+    (names(df)%in%standard.names)  %>%  `!` %>% which  -> to.drop
+    #print(to.drop)
+    if(length(to.drop)>0){
+        df[,-c(to.drop)] -> df
+        }
 return(df)
     }
 
 
-validate.blueprint.file.and.return.list.of.blueprints <- function(blueprint,debug,waves)
+stop.if.no.var.column <- function(df)
+{
+    if(!('var'%in%names(df))) {
+        stop('Error while importing the blueprint file: The file does not have specifications of original variable names that have to be indicated by a header row (row with variable names) that contains the string `var`. Please check the blueprint file. Maybe there is a non-comment row before the header or header is ignored during import?')
+    }
+    return(df)
+    }
+
+
+
+        
+validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,debug=FALSE,waves)
     {
         blueprint %>%
             blueprint.remove.column.rows    %>%
             ## guarantee that all columns have the correct name, especially var used for cutting
             df.set.standard.names %>%
-            df.check.standard.names -> blueprint
-        if(debug){print(blueprint)}
+            df.remove.non.standard.named.columns %>%
+            stop.if.no.var.column -> blueprint
                                         # cut blueprint into waves
         data.frame(startcol=(names(blueprint)=='var') %>% which,
                                         # end column 
                    endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                                         # + the last column containing everything
                             length(names(blueprint)))) %>% dplyr::transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
+        #print(blueprints.column.info)
                                         # Subset over the waves
         if(is.numeric(waves)){
             blueprints.column.info %>% dplyr::filter(.$wave%in%c(waves)) ->         blueprints.column.info
         }
+        cat('- Validating blueprint file for wave')
         blueprints.column.info %>% dplyr::group_by(wave)   %>%
                                         # -> reduced to a single-line data.frame containing the selected waves and the rows
             dplyr::do(blueprints={
+                cat(paste0('...',.$wave))
             chunk.columns <- c(1,(.$startcol):(.$endcol))
             blueprint[,chunk.columns]  %>% 
                 ## normalise to a data.frame with these variables / remove columns not named correct
@@ -396,9 +429,10 @@ blueprint.check.for.duplicate.variable.names <- function(blueprint)
 ## blueprint.wave.validator -----------------------------------------------------------
 blueprint.wave.validator <- function(blueprint)
 {
-    blueprint %>% 
-        blueprint.check.for.missing.files %>%
-        blueprint.check.for.duplicate.variable.names -> blueprint
+    blueprint %>%
+        blueprint.check.for.duplicate.variable.names %>%
+        blueprint.check.every.specified.original.var.has.a.file %>%         
+        blueprint.check.for.missing.files  -> blueprint
     return(blueprint)
 }
 ## blueprint -----------------------------------------------------------
@@ -429,7 +463,7 @@ blue <- function(
     if(file.exists(logfile)){unlink(logfile)}    
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
-    start.message <- paste0('Parsing file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'\n\n')
+    start.message <- paste0('- Parsing bluefile: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'\n')
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
@@ -439,7 +473,8 @@ blue <- function(
     
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
     ## Import and validate blueprint -----------------------------------------------------------
-    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.blueprints(blueprint=.,debug=debug,waves=waves) -> blueprints
+    code.time <- Sys.time()    
+    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,debug=debug,waves=waves) -> blueprints
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'wave' and 'blueprints'
     ## Convert blueprints to code -----------------------------------------------------------
@@ -449,11 +484,10 @@ blue <- function(
                                         #➤ if(debug){print(blueprints) }
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
-    if(data.table){blueprint.code.log('require(data.table)')}
+    if(data.table){blueprint.code.log('suppressMessages(require(data.table,quietly = TRUE))')}
     blueprint.code.log('require(dplyr)')
     blueprint.code.log(return.diff.code())
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
-    code.time <- Sys.time()
     blueprints %>% dplyr::do(dfs={
         blueprint <- .$blueprints
         wave <- .$wave
@@ -583,15 +617,16 @@ blue <- function(
 #    blueprint.code.log(code.to.execute)
     blueprint.code.log('final.df %>% tbl_df -> final.df')
                                         #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
-    cat(paste0('\nTime taken to produce code.file: ',format(Sys.time()- code.time,unit='sec'),'\n\n'))
-    cat(paste0('\nStarting merge processes...\n\n'))
+#    cat(paste0('\nTime taken to produce code.file: ',format(round(Sys.time()- code.time,2),unit='sec'),'\n\n'))
+    cat(paste0('\n- Starting import and merge processes...\n'))
     eval.time <- Sys.time()
     source(codefile)
     blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
     blueprint.log(paste('Finally ready. Merged data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
-    cat(paste0('\nTime elapsed for merging: ',format(Sys.time()- eval.time,unit='sec'),'\n\n\n'))
+                                        #    cat(paste0('\nTime elapsed for merging: ',format(Sys.time()- eval.time,unit='sec'),'\n\n\n'))
+    cat(paste0('--- Ready (after ',format(round(Sys.time()- code.time,1),unit='sec'),').\n\n'))    
     if(is.character(out_file)){
         cat(paste0('\nexporting to file: ',out_file,'\n'))
         rio::export(final.df,file=out_file)
