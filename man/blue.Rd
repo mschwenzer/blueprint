@@ -13,7 +13,7 @@ transform them by specified functions (e.g. to recode values) and recombine them
 blue(blue =
 "/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx",
 logfile=determinde.by.blueprint, waves=NULL,debug=FALSE,logfile=FALSE,fun=TRUE
-extended=FALSE,out_file=NULL)
+extended=FALSE,export.file=NULL)
 
 }
 %- maybe also 'usage' for other objects documented here.
@@ -39,9 +39,9 @@ Logical vector wheter extended logging (including descriptive
   statistics shall be written to the logfile. This by now takes
   considerably more time.
 }
-  \item{out_file}{
+  \item{export.file}{
 Path to file the data is written after merging. The suffix determines
-  the file type.
+  the file type. In addition the data.frame is returned \link{invisible}.
 }
 
   \item{debug}{
