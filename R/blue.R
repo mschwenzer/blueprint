@@ -439,7 +439,7 @@ blueprint.wave.validator <- function(blueprint)
 
 blue <- function(
                  blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
-                 out_file=NULL,
+                 export.file=NULL,
                  waves=NULL,
                  debug=FALSE,
                  logfile=FALSE,                      
@@ -463,7 +463,7 @@ blue <- function(
     if(file.exists(logfile)){unlink(logfile)}    
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
-    start.message <- paste0('- Parsing bluefile: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'\n')
+    start.message <- paste0('- Parsing blueprint file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'\n')
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
@@ -626,13 +626,17 @@ blue <- function(
     blueprint.log('')    
     blueprint.log(paste('Finally ready. Merged data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
                                         #    cat(paste0('\nTime elapsed for merging: ',format(Sys.time()- eval.time,unit='sec'),'\n\n\n'))
-    cat(paste0('--- Ready (after ',format(round(Sys.time()- code.time,1),unit='sec'),').\n\n'))    
-    if(is.character(out_file)){
-        cat(paste0('\nexporting to file: ',out_file,'\n'))
-        rio::export(final.df,file=out_file)
-        blueprint.log(paste0('Written data.frame to file:',out_file,'.'))
+    cat(paste0('--- Ready (after ',format(round(Sys.time()- code.time,1),unit='sec'),').\n'))    
+    if(is.character(export.file)){
+        cat(paste0('\nWriting file to file: ',export.file,'\n'))
+        rio::export(final.df,file=export.file)
+        blueprint.log(paste0('--- Written data.frame to file:',export.file,'.'))
+        return(invisible(final.df))
     }
-    return(final.df )}
+    else{
+        return(final.df)
+        }
+    }
 
 
 open.blue <- function(
