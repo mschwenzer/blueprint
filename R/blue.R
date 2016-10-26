@@ -53,7 +53,7 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
         if(is.numeric(waves)){
             blueprints.column.info %>% dplyr::filter(.$wave%in%c(waves)) ->         blueprints.column.info
         }
-        cat('- Validating blueprint file for wave')
+        cat('- Validating blueprint for wave')
         blueprints.column.info %>% dplyr::group_by(wave)   %>%
                                         # -> reduced to a single-line data.frame containing the selected waves and the rows
             dplyr::do(blueprints={
@@ -139,6 +139,7 @@ make.bind.code <- function(dfs,data.table=TRUE){
 blueprint.log.formatter <- function(record) {
     text <- paste(paste0(record$msg, sep=' '))
 }
+
 
 
 normalised.path.and.dir.exists <- function(filepath)
@@ -444,7 +445,6 @@ blue <- function(
                  debug=FALSE,
                  logfile=FALSE,                      
                  fun=TRUE,
-                 extended=FALSE,
                  data.table=TRUE,
                  ...
                  ){
@@ -454,20 +454,29 @@ blue <- function(
                                         # if(debug){cat(paste0('file: ',blueprint))}
     ## Logfile -----------------------------------------------------------
     ## Make default logfile path if missing logfile
-    if(!logfile)
-    {
-        stringr::str_replace(blueprint,'\\.....+$','.log.txt') -> logfile
+    if(is.character(logfile)){extended=TRUE}
+    if(is.logical(logfile)){
+        if(logfile)
+        {
+            extended=TRUE
+        }
+        else
+        {
+        extended=FALSE            
+        }
+        stringr::str_replace(blueprint,'\\.....+$','.blueprint.log.txt') -> logfile
     }
+    logfile %>% normalised.path.and.dir.exists -> logfile
     if(logfile==blueprint)
-    {stop('You have to specify a logfile since automatic replacement of the suffix was not able. Try to set a logfile argument or change it.')}
+    {stop('You have to specify a path to a logfile since automatic replacement of the suffix was not possible. Try to set a logfile path argument or change it.')}
     if(file.exists(logfile)){unlink(logfile)}    
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
                                         # if(debug){print('logger created')}
-    start.message <- paste0('- Parsing blueprint file: ',blueprint,'.',if(extended){paste0('\nlogging to file: ',logfile)},'\n')
+    start.message <- paste0('- Parsing blueprint file `',blueprint,'`.','\n- Logging to file `',logfile,'`.\n')
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
-    stringr::str_replace(blueprint,'\\.....+$','.code.R') -> codefile
+    stringr::str_replace(blueprint,'\\.....+$','.blueprint.code.R') -> codefile
                                         # ❗️ check for path consistency
     if(file.exists(codefile)){unlink(codefile)}
     
@@ -618,7 +627,7 @@ blue <- function(
     blueprint.code.log('final.df %>% tbl_df -> final.df')
                                         #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
 #    cat(paste0('\nTime taken to produce code.file: ',format(round(Sys.time()- code.time,2),unit='sec'),'\n\n'))
-    cat(paste0('\n- Starting import and merge processes...\n'))
+    cat(paste0('\n- Starting iterations of import',ifelse(fun,', transformation',''),ifelse(extended,',',' and'),' merge',ifelse(extended,' and compution of extended stats',''),' ...'))
     eval.time <- Sys.time()
     source(codefile)
     blueprint.log('')        
@@ -626,10 +635,13 @@ blue <- function(
     blueprint.log('')    
     blueprint.log(paste('Finally ready. Merged data.frame has',dim(final.df)[1],'rows and',dim(final.df)[2],'columns.'))
                                         #    cat(paste0('\nTime elapsed for merging: ',format(Sys.time()- eval.time,unit='sec'),'\n\n\n'))
-    cat(paste0('--- Ready (after ',format(round(Sys.time()- code.time,1),unit='sec'),').\n'))    
+    
+    cat(paste0('--- Creation of new data.frame [',nrow(final.df),' rows, ',ncol(final.df),' cols] took ',format(round(Sys.time()- code.time,1),unit='sec'),'.\n'))
     if(is.character(export.file)){
-        cat(paste0('\nWriting file to file: ',export.file,'\n'))
+        cat(paste0('--- Writing the merged data to file `',export.file,'` '))
+        write.time <- Sys.time()
         rio::export(final.df,file=export.file)
+        cat(paste0('took ',format(round((Sys.time()-write.time),1),unit='sec'),'.\n'))
         blueprint.log(paste0('--- Written data.frame to file:',export.file,'.'))
         return(invisible(final.df))
     }

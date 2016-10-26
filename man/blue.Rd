@@ -25,8 +25,7 @@ format is taken from the suffix as defined in the
 
 }
   \item{waves}{
-A numeric vector specifying the waves that shall be included from the
-  blueprint file.
+A numeric vector specifying the waves that shall be included from the blueprint file.
 }
   \item{logfile}{
 Path to a logfile that shall be used for logging
@@ -41,7 +40,11 @@ Logical vector wheter extended logging (including descriptive
 }
   \item{export.file}{
 Path to file the data is written after merging. The suffix determines
-  the file type. In addition the data.frame is returned \link{invisible}.
+  the file type. In addition the data.frame is returned
+  \link{invisible}. Note that if you choose to export to stata you have
+  to choose final variable names (column newvar) that comply with the
+  stata convention of stata names. You must use no dots (.) and length
+  of a variable name may not excede a maximum number of 26? characters. 
 }
 
   \item{debug}{
