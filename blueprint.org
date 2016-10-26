@@ -1,19 +1,19 @@
 #+TITLE: Blueprint. A tool to auto-merge datasets by rules specified in a meta-file
 #+OPTIONS:    
 * Overview
-Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intutitive way by using a meta-data file (a "blueprint") that can be easily edited with a choosen Spreadsheet application or text editor that can e.g. save the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. Blueprints define which variables from files are imported and (left) joins variables from other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile rio-package it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Evey variable can be transformed by functions or chains of functions that can be imagined as pipes or filters. Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes more versatile, clearer and more easy expandible. The workhorse-functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast package dplyr (🔴CITE). 
-* Using blueprint files to merge data
+Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data file (a "blueprint") that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. Blueprints define which variables from files are imported and (left) joins variables from other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile rio-package\ for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (operations seqentially applied to the original variable from the corresponding file /before/ it is merged into the final data frame). Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes more versatile, clearer and more easy expandable. The workhorse-functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages dplyr and data.table (🔴CITE). 
+* Merge same cases from different files
 In blueprint the merge process is specified by a so-called blueprint file into which we enter data in a standard Spreadsheet-Application like Excel or Open Office Spreadsheet. To enter data, we first have to create a new blueprint template. This can be done easily by entering:
 \begin{tt}
 \\
-open.blue('my.blueprint.name.csv',waves=1) \\
+open.blue('my.blueprint.name.csv') \\
 \end{tt}
 Alternatively we could change the suffix of the filename to xlsx to open an Excel-File:
 \begin{tt}
 open.blue('my.blueprint.name.xlsx) \\
 \\
 \end{tt}
-Every row represents an unique variable of a final data.frame. The name of this variable can be chosen according to the needs of the analysis that is specified in column one ('newvar'). Let's assume we have 2 files 'individual.csv' and 'household.csv'. Assume we want to import the variables 'idno, 'gender' and 'birthY' from file 'individual.csv'. This original variable names have to be written into the column var1 like in figure X. 
+Every row represents an unique variable of a final data.frame. The name of this variable can be chosen according to the needs of the analysis that is specified in column one ('newvar'). Assume we have 2 files 'individual.csv' and 'household.csv' and want to import the variables '/idno/, '/gender/' and '/birthY/' from file 'individual.csv'. This original variable names have to be written into the column var1 like in figure X. 
 \tiny \begin{tt}
 |--------------------+----------+----------------+-------------------+------|
 | newvar             | var1     | file1          | link1             | fun1 |
@@ -27,19 +27,26 @@ Every row represents an unique variable of a final data.frame. The name of this 
 | household.property | property | household.csv  | household.id=idno |      |
 |--------------------+----------+----------------+-------------------+------|
 \end{tt}\normalsize 
-If we want to add also household income and property which is in the file household.csv we typically want to left_ join, which equals adding columns for additional variables and keeping only the values of household.csv those units that ara also in individual.csv. For this we have to define how the which values in the files individual.csv and household.csv relate to the same units. This is achieved by defining a link condition. Let's assume in file 'household.csv' evey household has an id number called 'idno'. So we would specify the link condition household.id=idno. After saving this blueprint, we can import and merge the data by stating:
+Adding the additional variable '/household income/' and '/property/' from the seperate file `household.csv` typically includes left joining them, which equals to adding columns for additional variables and keeping only the values of household.csv of those units that are also in individual.csv. For this we have to define conditions which rows in the files individual.csv and household.csv relate to the same unit. This is achieved by specifiying the column link for the files to add from. Relying on the syntax of /dplyr::left_join/ (while leaving out apostrophes) the condition expresses which variables must be equal: You give the new variable name (specified in newvar) and the name of the matching old variable name in the original data file that is to be added: /name.in.newvar=old.variable.name.in.data.file.to.merge/
+Assuming e.g. that in file 'household.csv' every household has an id number called '/idno/' we would specify the link condition /household.id=idno/. Several link conditions can be combined by comma. The first part relates to new variable name specified as '/newvar/', the second to the original name in the data file to merge. If only single variables are given, it is assumed that the variable names are the same (name of newvar and var in a file to add are identical).
+If the variables used inside of the link condition are not in the /var1.../ column they will be used for merging but dropped afterwards.
+
+When a blueprint has been modified and saved in a external application, the merged data can be imported into R by simply stating:
 \begin{tt}
  \\
-my.df <- blueprint('my.blueprint.name.csv')\\
+my.df <- blue('my.blueprint.name.csv')\\
  \\
 \end{tt}
-my.df is a new data.frame with the selected variables from individual.csv plus the household variables that match the link condition.
-* Using functions
-By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automtically replaced by the result of the funtion. Let's say you want to recode gender from 0 to 'Male' and from 1 to 'Female'. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the origignal variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values 'Male' and 'Female'. Note that a fun can be used to execute a whole choin of transformatinos (seperated by '%>%'). Have a look at the documentation on pipes provided by magrittr how to use pipes ?magrittr::%>%. Also note that e.g. recoding  different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.
-* Joining multiple waves
-Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of wheter the same units are measured again or the same variables are measured again for different units, the purpose will be to combine data /rowwwise/. In spite of this being bad practice many data providers omit wave-files with changed variable names for the same items.  (like e.g. OECD PISA) Harmonizing this variable is very easy with using blueprints. The newvar column contains the variable names, the var1, var2,... contain the nemas from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialise a new blueprint with the waves argument using:
+/my.df/ is a new data.frame with the selected variables from individual.csv plus the household variables that match the link condition.
+* Transforming variables by functions
+By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let's say we want to recode gender from /0/ to '/Male/' and from /1/ to '/Female/'. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values '/Male/' and '/Female/'. Note that a fun entry can be used to execute a whole chain of transformations (seperated by '%>%'). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%>%/. Also note that e.g. recoding  different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.
+* Merging different waves
+  :PROPERTIES:
+  :ORDERED:  t
+  :END:
+Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,...) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the waves argument using:
 \begin{tt}
-open.blue('my.blueprint.name2.xlsx,waves=2) \\
+open.blue('my.blueprint.name2.xlsx,waves=1:2) \\
 \\
 \end{tt}
 Figure XXX shows a more advandced blueprint file reflecting this structure. 
@@ -56,10 +63,11 @@ Figure XXX shows a more advandced blueprint file reflecting this structure.
 | hh.property | property | h.w2.dta | hh.id=idno |      |         | h.w2.csv   |       | hh.id=idno |
 |-------------+----------+----------+------------+------+---------+------------+-------+------------|
 
-Entering the appropriate data will rename, transform and join the data automatically. In short waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.
-
+Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.
+* Source code
+Blueprint by default creates a corresponding .R code file containing all operations necessary to merge the data, by default written to /filepath_without_extension.blueprint.code.R/. If you choose to do so you can use, edit and share this standalone file without the need to have the blueprint package installed. 
 * Logging and descriptives of the merging / transfomation process
-Blueprint is intendedly not very verbose when called. Nonetheless it has a loggin feature that can be activated by setting blueprint(...,log=TRUE). In this case a logfile will be created that contains extended information on the transformation process (recode table and descriptives ont distribution) and information about automatic type conversions, statistics on dimension of the data. If you don't specify a logfile by blueprint(...,log=TRUE,logfile='/some/path/to.file.')), the name will be resambled by the name of the blueprint file. The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.  
+Blueprint is constructed to not be very verbose when called. Nonetheless it has a logging feature that can be activated by setting /blue(...,logfile=TRUE)/. In this case a extended logfile is created that contains also information on the transformation process (recode table, descriptives, distribution and information about automatic type conversions, statistics on dimension of the data). The parameter /logfile/ is set to /FALSE/ by default, only standard information will be written to this file. If you set logfile to a character string (by e.g. /blue(...,logfile='a.file.txt')/), an extended logfile will be written to this path. If you don't specify a path, the name will be resembled by the name of the blueprint file The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.  
 \begin{tiny}
 \begin{verbatim}
   
@@ -92,28 +100,25 @@ It might be convenient to create new variables that are constant for every unit 
 | survey.year | 2000L       | i.w1.dta |       |
 | wavec       | 'PISA2000'  | i.w1.dta |       |
 |-------------+-------------+----------+-------|
-Note the difference between /i.id/ steming from a column in the file i.w1.dta and /survey.year/ which will be 2000 or /wavec/ that will be "PISA2000" for all units in file i.w1.dta.
-
-
->> ''STRING'
-* Importing of multiple variables
-Assume you have 80 weight variables specfied by rep.weight1 to rep.weight80. You can specify these in var1 as /rep.weight[1:80]/. The rows containing brackets will be expanded to 80 additional rows resulting in the import (and if specified trasformation) of all of them.
-** Notes on handling of files
-Depending on functions from the package /rio/ , /blueprint/ will determine the file format by the suffix. The most frequetly used file format and their corresponding suffix is listed in Figure XXX.
-| Suffix                     | File format |
-|----------------------------+-------------|
-| R binary file              | .Rdata      |
-| Stata files                | .rda        |
-| SPSS files                 | .sav        |
-| Comma seperated Text files | .csv        |
-| HTML files                 | .html       |
-| Excel files                | .xlsx       |
-| Open Spreadsheet files     | .ods        |
-|----------------------------+-------------|
-Note that the spreadsheet in Excel can be selected by specifying a comma sperated which argument after the file (TODO)
-
-** Saving files
-By giving the argument blueprint(..., out_ file='/path/to/file.csv') the merged data.frame will be written to a file.
-** Aggregating data
+Note the difference between e.g. /i.id/ stemming from a column in the file i.w1.dta and /survey.year/ which will be the same ("PISA2000") for all units in file i.w1.dta.
+* Selection of multiple variables
+Assume you have 80 weight variables specified by rep.weight1 to rep.weight80. You can specify these in var1 as /rep.weight[1:80]/. The rows containing brackets will be expanded to 80 additional rows with the specific name, resulting in the import (and if specified also individual transformation) of all of this variables.
+* File formats for importing and exporting.
+When importing files the package /blueprint/ relies on the function /import/ from the package /rio/. This package recognises the most frequently used file formats based on their corresponding suffix as listed in Figure XXX. This applies to loading blueprint files as well as data file specified in this data files.
+| Suffix                     | Assumed file format |
+|----------------------------+---------------------|
+| R binary file              | .Rdata              |
+| Stata files                | .rda                |
+| SPSS files                 | .sav                |
+| Comma seperated Text files | .csv                |
+| HTML files                 | .html               |
+| Excel files                | .xlsx               |
+| Open Spreadsheet files     | .ods                |
+|----------------------------+---------------------|
+Note that additional arguments of blue are postponed to the function import resulting in additional specifications for import process. If you e.g. want to import the specific spreadsheet "MyData" in a Excel file (default would be the first Spreadsheet) it can be selected by specifying a /which/ argument.
+/blue('/path/to/blueprint.file.xlx',which='MyData')/
+* Exporting files
+By giving the argument /export.file/, e.g. blue(..., export.file='/path/to/file.csv') the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.
+* Aggregating data
 Will follow.
 

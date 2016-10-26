@@ -1,64 +1,30 @@
 \name{blueprint}
-\alias{blueprint}
-%- Also NEED an '\alias' for EACH other topic documented here.
+\alias{blueprint-package}
+\docType{package}
 \title{
-blueprint
+\packageTitle{blueprint}
 }
 \description{
-Use blueprint-file to import a subset of variables from several data files, optionally
-transform them by specified functions (e.g. to recode values) and recombine them into a new wide data.frame.
-
-}
-\usage{
-blueprint(blueprint = "/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx", sheet = 1, waves = 1, debug = FALSE)
-}
-%- maybe also 'usage' for other objects documented here.
-\arguments{
-  \item{blueprint}{
-A meta-data file that contains specifications what to do. The file
-format is taken from the suffix as defined in the \link{package::rio}{rio}-package.
-
-}
-  \item{...}{
-Optionally commands given to 
-}
-  \item{waves}{
-%%     ~~Describe \code{waves} here~~
-}
-  \item{debug}{
-Will be removed when alpha.
-}
+\packageDescription{blueprint}
 }
 \details{
-
-}
-\value{
-Returns a new data.frame / \link{dplyr::tibble}. 
-}
-\references{
-%% ~put references to the literature/web site here ~
+See the vignette.
+~~ An overview of how to use the package, including the most important functions ~~
 }
 \author{
-Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
-}
-\note{
-%%  ~~further notes~~
-}
+\packageAuthor{blueprint}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
+Maintainer: \packageMaintainer{blueprint}
+}
+\references{
+~~ Literature or other references for background information ~~
+}
+~~ Optionally other standard keywords, one per line, from file KEYWORDS in the R documentation directory ~~
+\keyword{ package }
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+~~ Optional links to other man pages, e.g. ~~
+~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-"blueprint"
+~~ simple examples of the most important functions ~~
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
