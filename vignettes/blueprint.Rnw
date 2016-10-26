@@ -1,0 +1,4 @@
+%\VignetteIndexEntry{Blueprint. A tool to auto-merge datasets by rules specified in a meta-ﬁle}
+\documentclass{article}
+\begin{document}
+\end{document}

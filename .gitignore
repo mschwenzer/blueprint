@@ -24,9 +24,21 @@
 /R/#load.and.recode.R#
 /R/#blueprint.R#
 /.DS_Store
+<<<<<<< HEAD
 /R/blue.R~
 /man/blue.Rd~
 /man/blueprint.Rd~
 /man/load.blue.Rd~
 /testcode.R~
+=======
+/testcode.R~
+/man/load.blue.Rd~
+/man/blue.Rd~
+/R/blue.R~
+/man/blueprint.Rd~
+/#testcode.R#
+/.#NAMESPACE
+>>>>>>> validators
 /man/#blue.Rd#
+/vignettes/blueprint.Rnw~
+
