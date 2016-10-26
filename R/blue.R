@@ -1,5 +1,4 @@
 
-
 blueprint.check.every.specified.original.var.has.a.file  <- function(df)
 {
     df$var %>% is.na %>% `!` %>% which  -> missing.in.var
@@ -9,6 +8,8 @@ blueprint.check.every.specified.original.var.has.a.file  <- function(df)
         stop(paste0('Missing files for specified variables:\n'),paste0('var: ',df$var[(missing.in.var[also.missing.in.file])],' -> newvar: ',df$newvar[(missing.in.var[also.missing.in.file])],collapse='\n'))}
             return(df)
     }
+
+
 
 df.remove.non.standard.named.columns  <- function(df)
 {
@@ -34,6 +35,11 @@ stop.if.no.var.column <- function(df)
 
 
         
+
+##' @importFrom dplyr transmute
+##' @importFrom dplyr filter
+##' @importFrom dplyr group_by
+##' @importFrom dplyr do
 validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,debug=FALSE,waves)
     {
         blueprint %>%
@@ -47,16 +53,16 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
                                         # end column 
                    endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                                         # + the last column containing everything
-                            length(names(blueprint)))) %>% dplyr::transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
+                            length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
         #print(blueprints.column.info)
                                         # Subset over the waves
         if(is.numeric(waves)){
-            blueprints.column.info %>% dplyr::filter(.$wave%in%c(waves)) ->         blueprints.column.info
+            blueprints.column.info %>% filter(.$wave%in%c(waves)) ->         blueprints.column.info
         }
         cat('- Validating blueprint for wave')
-        blueprints.column.info %>% dplyr::group_by(wave)   %>%
+        blueprints.column.info %>% group_by(wave)   %>%
                                         # -> reduced to a single-line data.frame containing the selected waves and the rows
-            dplyr::do(blueprints={
+            do(blueprints={
                 cat(paste0('...',.$wave))
             chunk.columns <- c(1,(.$startcol):(.$endcol))
             blueprint[,chunk.columns]  %>% 
@@ -70,6 +76,11 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
     }
 
 
+##' @importFrom plyr llply
+##' @importFrom stringr str_detect
+##' @importFrom dplyr arrange
+##' @importFrom Hmisc describe.vector
+##' @importFrom stargazer stargazer
 return.diff.code <- function()
 {
     "
@@ -101,7 +112,7 @@ if(extended)
     if(extended){
     data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% dplyr::arrange(old)  ->     printfr
     
-capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
+capture.output(    printfr %>% as.matrix %>% t %>% stargazer::stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
                             if(new.type!=old.type){
                                 blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Was this intended?'))
                             }
@@ -127,15 +138,6 @@ make.bind.code <- function(dfs,data.table=TRUE){
 }
 
 
-
-## require(plyr)
-## require(dplyr)
-## require(stringr)  
-## require(rio)
-## require(logging)
-## require(stargazer)
-## require(Hmisc)    
-
 blueprint.log.formatter <- function(record) {
     text <- paste(paste0(record$msg, sep=' '))
 }
@@ -160,7 +162,16 @@ normalised.path.and.dir.exists <- function(filepath)
 
 
 
-
+##' Run over attributes and try to create a vector.
+##'
+##' Create 
+##' @title attrs.as.factor
+##' @param x a vector object or data.fram.
+##' @return Return either the data.frame or the variable as factor with levels of attributes 
+##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
+##' @export
+##' @importFrom dplyr recode
+##' @importFrom plyr llply
 attrs.as.factor <- function (x)
 {
     the.label <- x %>% attr("label")
@@ -187,7 +198,18 @@ attrs.as.factor <- function (x)
                                         #     attr(x, "label") <- the.label
 }
 
-
+# ##' .. content for \description{} (no empty lines) ..
+# ##'
+# ##' .. content for \details{} ..
+# ##' @title 
+# ##' @param blueprint 
+# ##' @param fun 
+# ##' @param wave 
+# ##' @param debug 
+# ##' @param extended 
+# ##' @return 
+# ##' @author Marc Schwenzer
+##' @importFrom rio import
 load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALSE)
 {
                                         #                         cat('recs:\n')
@@ -218,25 +240,30 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALS
 
 
 
-
+##' @importFrom stringr str_replace_all
+##' @importFrom stringr str_split
+##' @importFrom stringr str_detect
 process.links <- function(links)        {
     links %>% str_replace_all('"','') %>% str_replace_all("'","") %>% 
         lapply(function(link)
         {
             if(is.na(link)){return(NA)}
-            link %>% stringr::str_split(',') %>%  .[[1]]  -> link
-            link %>% stringr::str_detect('=') %>% `!` %>% which  -> pos.no.equal.sign
+            link %>% str_split(',') %>%  .[[1]]  -> link
+            link %>% str_detect('=') %>% `!` %>% which  -> pos.no.equal.sign
                                         #                print(pos.no.equal.sign)
                                         # add equal sign for condition
                                         #                print(link[pos.no.equal.sign])
             link[pos.no.equal.sign]  %>% paste0(.,'=',.)  -> link[pos.no.equal.sign]
                                         #                print(link)
-            link %>% stringr::str_replace_all('=','"="') %>% paste0('"',.,'"')  %>% paste0(collapse=',')-> link
+            link %>% str_replace_all('=','"="') %>% paste0('"',.,'"')  %>% paste0(collapse=',')-> link
             return(link)
         }) %>% unlist}
 
 
-
+##' @importFrom plyr llply
+##' @importFrom stringr str_detect
+##' @importFrom stargazer stargazer
+##' @importFrom Hmisc describe.vector
 blueprint.variable.diff <- function(variable,funs,name='',wave='')
 {
     blueprint.log('')
@@ -249,12 +276,12 @@ blueprint.variable.diff <- function(variable,funs,name='',wave='')
     extended <- length(kept.levels.of.variable)<40
     if(extended)
     {
-        plyr::llply(kept.levels.of.variable,function(x){stringr::str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
+        llply(kept.levels.of.variable,function(x){str_detect(variable,x %>% as.character) %>% sum})  %>% unlist    -> old.count
     }
     eval(parse(text=paste0('variable %>% ',funs)))  -> variable
     class(variable) -> new.type
     if(extended){
-        data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% dplyr::arrange(old)  ->     printfr
+        data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% arrange(old)  ->     printfr
         
         capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
     if(new.type!=old.type){
@@ -263,7 +290,7 @@ blueprint.variable.diff <- function(variable,funs,name='',wave='')
     blueprint.log('')
     blueprint.log('')    
     blueprint.log('   >>> Distribution after recoding -----\n')                            
-    capture.output(x=print(Hmisc::describe.vector(variable)),file=NULL) %>% blueprint.log
+    capture.output(x=print(describe.vector(variable)),file=NULL) %>% blueprint.log
     return(variable)
 }
 
@@ -272,17 +299,25 @@ set.empty.values.to.NA <- function(blueprint)
 {
     blueprint %>% mutate_all(.funs=funs(ifelse(.=='',NA,.)))
 }
+
+
+
+
 ## add.variables.specified.by.brackets -----------------------------------------------------------
+
+##' @importFrom stringr str_detect
+##' @importFrom stringr str_replace_all
+##' @importFrom plyr ldply
 add.variables.specified.by.brackets <- function(blueprint)
 {
     ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
     rowstoprocess <- blueprint[,1]
     blueprint %>% names -> column.names
     while(length(
-    ((blueprint[,1]) %>% stringr::str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+    ((blueprint[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
     >0))
     {
-        rowid <- ((blueprint[,'newvar']) %>% stringr::str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+        rowid <- ((blueprint[,'newvar']) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
         if((rowid-1)>0){
             frame.before <- blueprint[1:(rowid-1),]
         }
@@ -294,13 +329,13 @@ add.variables.specified.by.brackets <- function(blueprint)
         ## ❗️ to change
         pattern <- regmatches(to.process.vars[,1],regexpr('\\[[0-9]*:[0-9]*\\]',to.process.vars[,1]))
         nums <- eval(parse(
-            text=(pattern %>% stringr::str_replace_all('\\[','') %>% stringr::str_replace_all('\\]',''))
+            text=(pattern %>% str_replace_all('\\[','') %>% str_replace_all('\\]',''))
         )
         )
-        pattern %>% stringr::str_replace_all('\\[','\\\\[') %>% stringr::str_replace_all('\\]','\\\\]')  -> pattern
-        frame.toadd <- plyr::ldply(nums,
+        pattern %>% str_replace_all('\\[','\\\\[') %>% str_replace_all('\\]','\\\\]')  -> pattern
+        frame.toadd <- ldply(nums,
                                    function(x){
-                                       to.process.vars %>% stringr::str_replace_all(pattern,x)
+                                       to.process.vars %>% str_replace_all(pattern,x)
                                    })
         names(frame.toadd) <- column.names
         assign('blueprint',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(blueprint)+1)){frame.after}),-1)
@@ -314,6 +349,7 @@ add.variables.specified.by.brackets <- function(blueprint)
 
 
 ## return.not.existing.files -----------------------------------------------------------
+##' @importFrom plyr llply
 return.not.existing.files <- function(blueprint)
 {
     blueprint[,'file'] %>% unlist %>% c %>% unique %>% na.omit  -> files.to.check
@@ -323,11 +359,13 @@ return.not.existing.files <- function(blueprint)
 }
 ###
 
+##' @importFrom plyr llply
+##' @importFrom stringr str_detect
 blueprint.remove.column.rows <- function(blueprint,debug=FALSE)
 {
                                         #    print(blueprint[,1])
     ## Remove comment rows -----------------------------------------------------------
-    llply(blueprint[,1],function(x){stringr::str_detect(x,'^ *#')})  %>% unlist %>% `!`  %>% which-> not.commentrows
+    llply(blueprint[,1],function(x){str_detect(x,'^ *#')})  %>% unlist %>% `!`  %>% which-> not.commentrows
                                         #    print(not.commentrows)
     if(debug){cat('commentrows:',which(not.commentrows),'\n')}
     if(length(not.commentrows)>0){
@@ -347,13 +385,15 @@ blueprint.code.log <- function(message){
 }
 
 ## return.df.with.certain.vars -----------------------------------------------------------
+##' @importFrom dplyr transmute
+##' @importFrom plyr llply
 return.df.with.certain.vars <- function(df,...,debug=0)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
     eval(substitute(alist(...)))  %>%  sapply(toString)   -> vars.to.get
                                         #    print(vars.to.get)
-    vars.to.get %>% plyr::llply(function(x){exists(x,df)}) %>% unlist   %>% `!` %>% which -> not.existing.pos
+    vars.to.get %>% llply(function(x){exists(x,df)}) %>% unlist   %>% `!` %>% which -> not.existing.pos
                                         #    print(vars.to.get[not.existing.pos])
     if (length(not.existing.pos>0))
     {
@@ -366,7 +406,7 @@ return.df.with.certain.vars <- function(df,...,debug=0)
     return(df)
 }
 
-
+##' @importFrom dplyr transmute
 return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos,debug=0)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
@@ -386,16 +426,17 @@ return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos
 }
 
 ## df.set.standard.names -----------------------------------------------------------
+##' @importFrom stringr str_detect
 df.set.standard.names  <- function(df)
 {
     names(df)  -> df.names
-    df.names %>% stringr::str_detect('var') %>% which -> df.var.columns
+    df.names %>% str_detect('var') %>% which -> df.var.columns
     'var'  -> df.names[df.var.columns]
-    df.names %>% stringr::str_detect('file') %>% which -> df.file.columns
+    df.names %>% str_detect('file') %>% which -> df.file.columns
     'file'  -> df.names[df.file.columns]
-    df.names %>% stringr::str_detect('link') %>% which -> df.link.columns
+    df.names %>% str_detect('link') %>% which -> df.link.columns
     'link'  -> df.names[df.link.columns]    
-    df.names %>% stringr::str_detect('fun') %>% which -> df.fun.columns
+    df.names %>% str_detect('fun') %>% which -> df.fun.columns
     'fun'  -> df.names[df.fun.columns]
                                         # lastly set newvar that has previous also been set to var
     'newvar'  -> df.names[1]
@@ -422,7 +463,7 @@ blueprint.check.for.missing.files <- function(blueprint)
 blueprint.check.for.duplicate.variable.names <- function(blueprint)
 {
     if(sum(duplicated(blueprint[,1]))>0){
-        stop(paste('Duplicate variablenames:',blueprint[which(duplicated(blueprint[,1]))[1],1]),' rows:',paste0(which(duplicated(blueprint[,1])),collapse=','))}
+        stop(paste0('Duplicate variablenames: ',blueprint[which(duplicated(blueprint[,1]))[1],1]),' rows:',paste0(which(duplicated(blueprint[,1])),collapse=','))}
     return(blueprint)
 }
 
@@ -436,16 +477,31 @@ blueprint.wave.validator <- function(blueprint)
         blueprint.check.for.missing.files  -> blueprint
     return(blueprint)
 }
-## blueprint -----------------------------------------------------------
 
+
+
+##' \code{blue} - Read a blueprint file and return a merged data frame.
+##' 
+##' Use a blueprint-file to import a subset of variables from several data files, optionally transform them by specified functions (e.g. to recode values) and recombine them into a new wide data.frame.
+##' @param blueprint A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link{rio::import}} function. See the vignette for details of the structure of a blueprint.
+##' @param fun Logical vector wheter the functions from \code{fun} should be applied on the specified variables.
+##' @param export.file Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.
+##' @param waves A numeric vector specifying the waves that shall be included from the blueprint file. If NULL every wave will be merged.
+##' @param debug Will be removed when alpha.
+##' @param logfile Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.
+##' @param data.table Wheter to use the data.table package for merge process. (Minimal faster)
+##' @param ... Optionally commands are passed to \code{\link{rio::import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
+##' @return New merged \code{data.frame} according to the blueprint. It is set to the class \code{\link{dplyr::tibble}}.
+##'@export
+##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 blue <- function(
-                 blueprint='/Users/eur/Documents/140_Datenaufbereitung/pisa.xlsx',
+                 blueprint='a.blueprint',
+                 fun=TRUE,                 
                  export.file=NULL,
                  waves=NULL,
-                 debug=FALSE,
                  logfile=FALSE,                      
-                 fun=TRUE,
                  data.table=TRUE,
+                 debug=FALSE,                 
                  ...
                  ){
                                         # requirements
@@ -651,7 +707,18 @@ blue <- function(
     }
 
 
-open.blue <- function(
+
+
+##' open_blue creates or loads blueprint-file .
+##' 
+##' \code{open_blue} creates or loads blueprint-files of various file formats.
+##' @param blueprint Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link{rio::import}}. See the vignette for details of the structure.
+##' @param waves Number specifying how many waves shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.
+##' @return Returns nothing. It is just used for the side effect of generating or opening the specified blueprint file.
+##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
+##' @export
+##' @examples open_blue('/path/to/file.xlsx')
+open_blue <- function(
                           blueprint=paste0(getwd(),'/blueprint.xlsx'),
                           waves=1,
                           debug=FALSE
@@ -677,4 +744,5 @@ v\n'
     browseURL(paste0('file://', blueprint))
     invisible(blueprint)
     }
+
 
