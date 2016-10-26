@@ -68,7 +68,7 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
             blueprint[,chunk.columns]  %>% 
                 ## normalise to a data.frame with these variables / remove columns not named correct
                 return.df.with.certain.vars(newvar,var,file,link,fun) %>%
-                ## ❗️ to validate
+                ## !!! to validate
                 add.variables.specified.by.brackets %>%
                 set.empty.values.to.NA  %>%
                 ## Validate all blueprints before something is done actually.... 
@@ -111,7 +111,7 @@ if(extended)
     eval(parse(text=paste0('variable %>% ',funs)))  -> variable
     class(variable) -> new.type
     if(extended){
-    data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% dplyr::arrange(old)  ->     printfr
+    data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% dplyr::arrange(old)  ->     printfr
     
 capture.output(    printfr %>% as.matrix %>% t %>% stargazer::stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
                             if(new.type!=old.type){
@@ -163,41 +163,6 @@ normalised.path.and.dir.exists <- function(filepath)
 
 
 
-##' Run over attributes and try to create a vector.
-##'
-##' Create 
-##' @title attrs.as.factor
-##' @param x a vector object or data.fram.
-##' @return Return either the data.frame or the variable as factor with levels of attributes 
-##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
-##' @export
-##' @importFrom dplyr recode
-##' @importFrom plyr llply
-attrs.as.factor <- function (x)
-{
-    the.label <- x %>% attr("label")
-    from <- x %>% attr("labels")
-                                        #    print(from)
-    if(from %>% is.numeric)
-    {
-        paste0('`',from,'`') -> from
-    }
-    else
-    {
-        paste0('"',from,'"') -> from
-    }
-                                        #    print(from)
-    x %>% attr("labels") %>% names -> to
-    paste0('"',to,'"') -> to
-    plyr::llply(1:length(from),function(id){paste0(from[id],'=',to[id])}) %>% paste0(collapse=',') -> recod
-                                        #    print(recod)
-                                        #     rownames(cats) <- NULL
-    paste0('x %>% dplyr::recode(',recod,') %>% as.factor-> x') -> code.to.eval
-                                        #    print(code.to.eval)
-                                        #eval(parse(text=code.to.eval))
-    return(x)
-                                        #     attr(x, "label") <- the.label
-}
 
 
 ##' @importFrom rio import
@@ -206,7 +171,7 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALS
 {
                                         #                         cat('recs:\n')
                                         #                          print(recs)
-                                        # find non-empty fun (rec) columns  / ❗️ replace by stringr::str_match / find out why it can be string "NA" which is a bug
+                                        # find non-empty fun (rec) columns  / !!! replace by stringr::str_match / find out why it can be string "NA" which is a bug
     if(fun)
     {
         ((blueprint$fun!='NA')&(!is.na(blueprint$fun))&(!is.nan(blueprint$fun)))  %>% which -> rep.pos
@@ -318,7 +283,7 @@ add.variables.specified.by.brackets <- function(blueprint)
             frame.after <- blueprint[(rowid+1):nrow(blueprint),]
         }
         to.process.vars <- blueprint[rowid,]
-        ## ❗️ to change
+        ## !!! to change
         pattern <- regmatches(to.process.vars[,1],regexpr('\\[[0-9]*:[0-9]*\\]',to.process.vars[,1]))
         nums <- eval(parse(
             text=(pattern %>% str_replace_all('\\[','') %>% str_replace_all('\\]',''))
@@ -489,6 +454,10 @@ blueprint.wave.validator <- function(blueprint)
 ##' @return New merged \code{data.frame} according to the blueprint. It is set to the class \code{\link{dplyr::tibble}}.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
+##' @importFrom stringr str_replace
+##' @importFrom stringr str_detect
+##' @importFrom stringr str_split
+##' @importFrom rio export
 blue <- function(
                  blueprint='a.blueprint',
                  fun=TRUE,                 
@@ -515,7 +484,7 @@ blue <- function(
         {
         extended=FALSE            
         }
-        stringr::str_replace(blueprint,'\\.....+$','.blueprint.log.txt') -> logfile
+        str_replace(blueprint,'\\.....+$','.blueprint.log.txt') -> logfile
     }
     logfile %>% normalised.path.and.dir.exists -> logfile
     if(logfile==blueprint)
@@ -527,7 +496,7 @@ blue <- function(
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
-    stringr::str_replace(blueprint,'\\.....+$','.blueprint.code.R') -> codefile
+    str_replace(blueprint,'\\.....+$','.blueprint.code.R') -> codefile
                                         # ❗️ check for path consistency
     if(file.exists(codefile)){unlink(codefile)}
     
@@ -538,10 +507,10 @@ blue <- function(
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'wave' and 'blueprints'
     ## Convert blueprints to code -----------------------------------------------------------
-                                        #➤ if(debug){print(blueprint)}
+                                        # if(debug){print(blueprint)}
     
     
-                                        #➤ if(debug){print(blueprints) }
+                                        # if(debug){print(blueprints) }
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
     if(data.table){blueprint.code.log('suppressMessages(require(data.table,quietly = TRUE))')}
@@ -569,7 +538,7 @@ blue <- function(
                                                 # print(vars.to.get)
 ### Load main file ####################################################################################################
         blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
-        blueprint$file %>% stringr::str_detect(blueprint.main.file)  -> pos.main.file
+        blueprint$file %>% str_detect(blueprint.main.file)  -> pos.main.file
         (pos.main.file & (pos.main.file %>% is.na %>% `!`)) -> pos.main.file
                                         #➤ if(debug)        {print(blueprint$wave                 )}
         blueprint[pos.main.file,] %>%
@@ -577,10 +546,10 @@ blue <- function(
         paste0(code.to.execute,'  -> main.data') -> code.to.execute
         blueprint$newvar %>% na.omit    -> main.data.var
         blueprint.code.log(code.to.execute)
-        # 🔴 eval(parse(text=code.to.execute)) -> main.data
+        # !!! eval(parse(text=code.to.execute)) -> main.data
                                         # loaded and processed. remaining parts still to be processed
         blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),] -> blueprint
-### restrict to variables that are specified by a file reference ❗️ should be: also a link
+### restrict to variables that are specified by a file reference !!! should be: also a link
 ### Add the additional files  ####################################################################################################
                 if(debug){       print(all.vars)}
                 if(debug) {print(blueprint$file)}
@@ -606,7 +575,7 @@ blue <- function(
                                   }
       
                           
-                                  add.blueprint$link %>% stringr::str_split(',') %>% plyr::llply(.,function(x){x %>% stringr::str_replace('^.*=','')})  -> to.links                                      
+                                  add.blueprint$link %>% str_split(',') %>% plyr::llply(.,function(x){x %>% str_replace('^.*=','')})  -> to.links                                      
 # find link variables not specified in blueprints
                                   ((to.links %>% unlist %>% unique)    %in% add.blueprint$newvar) %>% `!` -> pos
                                   (to.links %>% unlist %>% unique)[pos] -> vars.to.add
@@ -691,7 +660,7 @@ blue <- function(
     if(is.character(export.file)){
         cat(paste0('--- Writing the merged data to file `',export.file,'` '))
         write.time <- Sys.time()
-        rio::export(final.df,file=export.file)
+        export(final.df,file=export.file)
         cat(paste0('took ',format(round((Sys.time()-write.time),1),unit='sec'),'.\n'))
         blueprint.log(paste0('--- Written data.frame to file:',export.file,'.'))
         return(invisible(final.df))
