@@ -81,6 +81,7 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
 ##' @importFrom dplyr arrange
 ##' @importFrom Hmisc describe.vector
 ##' @importFrom stargazer stargazer
+##' @importFrom logging loginfo
 return.diff.code <- function()
 {
     "
@@ -198,18 +199,9 @@ attrs.as.factor <- function (x)
                                         #     attr(x, "label") <- the.label
 }
 
-# ##' .. content for \description{} (no empty lines) ..
-# ##'
-# ##' .. content for \details{} ..
-# ##' @title 
-# ##' @param blueprint 
-# ##' @param fun 
-# ##' @param wave 
-# ##' @param debug 
-# ##' @param extended 
-# ##' @return 
-# ##' @author Marc Schwenzer
+
 ##' @importFrom rio import
+##' @importFrom dplyr transmute
 load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALSE)
 {
                                         #                         cat('recs:\n')
@@ -376,10 +368,13 @@ blueprint.remove.column.rows <- function(blueprint,debug=FALSE)
 
 
 ## blueprint.log -----------------------------------------------------------
+##' @importFrom logging loginfo
 blueprint.log <- function(message){
     
     loginfo(message, logger="blueprint.logger")
 }
+
+##' @importFrom logging loginfo
 blueprint.code.log <- function(message){
     loginfo(message, logger="blueprint.code.logger")
 }
@@ -492,8 +487,8 @@ blueprint.wave.validator <- function(blueprint)
 ##' @param data.table Wheter to use the data.table package for merge process. (Minimal faster)
 ##' @param ... Optionally commands are passed to \code{\link{rio::import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
 ##' @return New merged \code{data.frame} according to the blueprint. It is set to the class \code{\link{dplyr::tibble}}.
-##'@export
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
+##' @export
 blue <- function(
                  blueprint='a.blueprint',
                  fun=TRUE,                 
@@ -718,6 +713,7 @@ blue <- function(
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
 ##' @examples open_blue('/path/to/file.xlsx')
+##' @importFrom rio export
 open_blue <- function(
                           blueprint=paste0(getwd(),'/blueprint.xlsx'),
                           waves=1,
@@ -738,7 +734,7 @@ open_blue <- function(
 v\n'
         a.df[2,1:5] <- description
         if(debug){return(a.df)}
-    a.df %>% rio::export(file=blueprint)
+    a.df %>% export(file=blueprint)
     cat(paste0('Written blueprint template to file ',blueprint,'.\n'))
     }
     browseURL(paste0('file://', blueprint))
