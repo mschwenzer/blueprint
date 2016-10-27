@@ -1,15 +1,19 @@
 Package: blueprint
 Type: Package
-Title: Blueprint
-Version: 0.9
-Date: 2016-09-26
+Title: A Tool to Auto-Merge Datasets by Rules Specified in a Meta-File
+Version: 0.9.5
+Date: 2016-10-26
 Author: Marc Schwenzer
 Maintainer: Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 Description: The R-package blueprint offers the opportunity to select, combine
-    and transform data in an easy and intutitive way by using a meta-data file (a
+    and transform data efficient in an easy and intutitive way by using a meta-data file (a
     "blueprint") that can be easily edited with a choosen Spreadsheet application
     or text editor that can e.g. save the file formats OpenOffice Calc, Excel, CSV,
     HTML.
-License: GPL (>= 2)
-Depends: plyr,dplyr,stringr,rio,logging,stargazer,Hmisc
-Suggests: testthat
+License: GPL-3
+URL: https://github.com/mschwenzer/blueprint
+BugReports: https://github.com/mschwenzer/blueprint/issues
+VignetteBuilder: knitr
+Suggests: testthat, knitr, rmarkdown
+Imports: plyr, dplyr, logging, rio, stargazer, stringr, Hmisc
+RoxygenNote: 5.0.1

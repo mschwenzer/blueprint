@@ -1,0 +1,9 @@
+^\.git*
+\.git
+\.gitignore
+.Rbuildignore
+README.Rmd
+CONTRIBUTING.md
+^revdep$
+^.*\.Rproj$
+.*\~$

@@ -1,4 +1,4 @@
-
+##' @importFrom dplyr %>%
 blueprint.check.every.specified.original.var.has.a.file  <- function(df)
 {
     df$var %>% is.na %>% `!` %>% which  -> missing.in.var
@@ -10,7 +10,7 @@ blueprint.check.every.specified.original.var.has.a.file  <- function(df)
     }
 
 
-
+##' @importFrom dplyr %>%
 df.remove.non.standard.named.columns  <- function(df)
 {
     ## remove empty colums
@@ -40,6 +40,7 @@ stop.if.no.var.column <- function(df)
 ##' @importFrom dplyr filter
 ##' @importFrom dplyr group_by
 ##' @importFrom dplyr do
+##' @importFrom dplyr %>%
 validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,debug=FALSE,waves)
     {
         blueprint %>%
@@ -82,6 +83,7 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
 ##' @importFrom Hmisc describe.vector
 ##' @importFrom stargazer stargazer
 ##' @importFrom logging loginfo
+##' @importFrom dplyr %>%
 return.diff.code <- function()
 {
     "
@@ -127,7 +129,7 @@ capture.output(    printfr %>% as.matrix %>% t %>% stargazer::stargazer(type='te
 
 
 
-
+##' @importFrom dplyr %>%
 make.bind.code <- function(dfs,data.table=TRUE){
     if(data.table)
     {
@@ -144,7 +146,7 @@ blueprint.log.formatter <- function(record) {
 }
 
 
-
+##' @importFrom dplyr %>%
 normalised.path.and.dir.exists <- function(filepath)
 {
     suppressWarnings(
@@ -167,6 +169,7 @@ normalised.path.and.dir.exists <- function(filepath)
 
 ##' @importFrom rio import
 ##' @importFrom dplyr transmute
+##' @importFrom dplyr %>%
 load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALSE)
 {
                                         #                         cat('recs:\n')
@@ -200,6 +203,7 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALS
 ##' @importFrom stringr str_replace_all
 ##' @importFrom stringr str_split
 ##' @importFrom stringr str_detect
+##' @importFrom dplyr %>%
 process.links <- function(links)        {
     links %>% str_replace_all('"','') %>% str_replace_all("'","") %>% 
         lapply(function(link)
@@ -221,6 +225,8 @@ process.links <- function(links)        {
 ##' @importFrom stringr str_detect
 ##' @importFrom stargazer stargazer
 ##' @importFrom Hmisc describe.vector
+##' @importFrom utils capture.output
+##' @importFrom dplyr %>%
 blueprint.variable.diff <- function(variable,funs,name='',wave='')
 {
     blueprint.log('')
@@ -238,7 +244,7 @@ blueprint.variable.diff <- function(variable,funs,name='',wave='')
     eval(parse(text=paste0('variable %>% ',funs)))  -> variable
     class(variable) -> new.type
     if(extended){
-        data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% arrange(old)  ->     printfr
+        data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% arrange(old)  ->     printfr
         
         capture.output(    printfr %>% as.matrix %>% t %>% stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
     if(new.type!=old.type){
@@ -252,6 +258,8 @@ blueprint.variable.diff <- function(variable,funs,name='',wave='')
 }
 
 ## make empty NA -----------------------------------------------------------
+##' @importFrom dplyr mutate_all
+##' @importFrom dplyr %>%
 set.empty.values.to.NA <- function(blueprint)
 {
     blueprint %>% mutate_all(.funs=funs(ifelse(.=='',NA,.)))
@@ -261,10 +269,10 @@ set.empty.values.to.NA <- function(blueprint)
 
 
 ## add.variables.specified.by.brackets -----------------------------------------------------------
-
 ##' @importFrom stringr str_detect
 ##' @importFrom stringr str_replace_all
 ##' @importFrom plyr ldply
+##' @importFrom dplyr %>%
 add.variables.specified.by.brackets <- function(blueprint)
 {
     ## Add [0:x]-specified interval to variablenames: create a row for every individual variable  -----------------------------------------------------------
@@ -306,7 +314,9 @@ add.variables.specified.by.brackets <- function(blueprint)
 
 
 ## return.not.existing.files -----------------------------------------------------------
+##' @importFrom stats na.omit
 ##' @importFrom plyr llply
+##' @importFrom dplyr %>%
 return.not.existing.files <- function(blueprint)
 {
     blueprint[,'file'] %>% unlist %>% c %>% unique %>% na.omit  -> files.to.check
@@ -314,10 +324,11 @@ return.not.existing.files <- function(blueprint)
         (!file.exists(x))|                    dir.exists(x)
     }) %>% unlist          %>% files.to.check[.]
 }
-###
 
+###
 ##' @importFrom plyr llply
 ##' @importFrom stringr str_detect
+##' @importFrom dplyr %>% 
 blueprint.remove.column.rows <- function(blueprint,debug=FALSE)
 {
                                         #    print(blueprint[,1])
@@ -347,6 +358,7 @@ blueprint.code.log <- function(message){
 ## return.df.with.certain.vars -----------------------------------------------------------
 ##' @importFrom dplyr transmute
 ##' @importFrom plyr llply
+##' @importFrom dplyr %>%
 return.df.with.certain.vars <- function(df,...,debug=0)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
@@ -367,6 +379,7 @@ return.df.with.certain.vars <- function(df,...,debug=0)
 }
 
 ##' @importFrom dplyr transmute
+##' @importFrom dplyr %>%
 return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos,debug=0)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
@@ -387,6 +400,7 @@ return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos
 
 ## df.set.standard.names -----------------------------------------------------------
 ##' @importFrom stringr str_detect
+##' @importFrom dplyr %>%
 df.set.standard.names  <- function(df)
 {
     names(df)  -> df.names
@@ -429,6 +443,7 @@ blueprint.check.for.duplicate.variable.names <- function(blueprint)
 
 
 ## blueprint.wave.validator -----------------------------------------------------------
+##' @importFrom dplyr %>%
 blueprint.wave.validator <- function(blueprint)
 {
     blueprint %>%
@@ -443,21 +458,24 @@ blueprint.wave.validator <- function(blueprint)
 ##' \code{blue} - Read a blueprint file and return a merged data frame.
 ##' 
 ##' Use a blueprint-file to import a subset of variables from several data files, optionally transform them by specified functions (e.g. to recode values) and recombine them into a new wide data.frame.
-##' @param blueprint A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link{rio::import}} function. See the vignette for details of the structure of a blueprint.
+##' @param blueprint A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link[=rio]{import}} function. See the vignette for details of the structure of a blueprint.
 ##' @param fun Logical vector wheter the functions from \code{fun} should be applied on the specified variables.
 ##' @param export.file Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.
 ##' @param waves A numeric vector specifying the waves that shall be included from the blueprint file. If NULL every wave will be merged.
 ##' @param debug Will be removed when alpha.
 ##' @param logfile Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.
 ##' @param data.table Wheter to use the data.table package for merge process. (Minimal faster)
-##' @param ... Optionally commands are passed to \code{\link{rio::import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
-##' @return New merged \code{data.frame} according to the blueprint. It is set to the class \code{\link{dplyr::tibble}}.
+##' @param ... Optionally commands are passed to \code{\link[=rio]{import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
+##' @return New merged \code{data.frame} according to the blueprint. It is set to the class \code{\link[=dplyr]{tibble}}.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
+##' @importFrom logging addHandler
+##' @importFrom logging writeToFile
 ##' @importFrom stringr str_replace
 ##' @importFrom stringr str_detect
 ##' @importFrom stringr str_split
 ##' @importFrom rio export
+##' @importFrom dplyr %>%
 blue <- function(
                  blueprint='a.blueprint',
                  fun=TRUE,                 
@@ -497,7 +515,7 @@ blue <- function(
     blueprint.log(Sys.time())
     blueprint.log(start.message)
     str_replace(blueprint,'\\.....+$','.blueprint.code.R') -> codefile
-                                        # ❗️ check for path consistency
+                                        # !!! check for path consistency
     if(file.exists(codefile)){unlink(codefile)}
     
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
@@ -540,7 +558,7 @@ blue <- function(
         blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
         blueprint$file %>% str_detect(blueprint.main.file)  -> pos.main.file
         (pos.main.file & (pos.main.file %>% is.na %>% `!`)) -> pos.main.file
-                                        #➤ if(debug)        {print(blueprint$wave                 )}
+                                        # if(debug)        {print(blueprint$wave                 )}
         blueprint[pos.main.file,] %>%
             load.and.recode(fun=fun,wave=wave,extended=extended) -> code.to.execute
         paste0(code.to.execute,'  -> main.data') -> code.to.execute
@@ -595,7 +613,7 @@ blue <- function(
                                   paste0('\n\ndplyr::left_join(main.data,data.add,by=c(',link.condition[1],'))  -> main.data\n\nrm(data.add)\n\n') -> code.to.execute
                                         # codelog
                                   blueprint.code.log(code.to.execute)
-                                        #🔴 eval(parse(text=code.to.execute))
+                                        #eval(parse(text=code.to.execute))
                                   }
                                       ## codestoexecute <- which(blueprint$file==x&(grepl('`',blueprint$vars,perl=TRUE)))
                                       ## for(a.row in codestoexecute)
@@ -675,14 +693,16 @@ blue <- function(
 
 ##' open_blue creates or loads blueprint-file .
 ##' 
-##' \code{open_blue} creates or loads blueprint-files of various file formats.
-##' @param blueprint Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link{rio::import}}. See the vignette for details of the structure.
+##' \code{"open_blue"} creates or loads blueprint-files of various file formats.
+##' @param blueprint Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link[=rio]{import}}. See the vignette for details of the structure.
 ##' @param waves Number specifying how many waves shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.
 ##' @return Returns nothing. It is just used for the side effect of generating or opening the specified blueprint file.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
 ##' @examples open_blue('/path/to/file.xlsx')
 ##' @importFrom rio export
+##' @importFrom utils browseURL
+##' @importFrom dplyr %>%
 open_blue <- function(
                           blueprint=paste0(getwd(),'/blueprint.xlsx'),
                           waves=1,
@@ -709,5 +729,3 @@ v\n'
     browseURL(paste0('file://', blueprint))
     invisible(blueprint)
     }
-
-

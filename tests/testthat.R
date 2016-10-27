@@ -23,7 +23,7 @@ expect_equal("'asd'='asdf'"  %>% process.links,"\"asd\"=\"asdf\"")
 expect_equal('"asd"="asdf"'  %>% process.links,"\"asd\"=\"asdf\"")
 # Time enhancement when the checks replacement are part of the blueprint validator
 
-## 🔵 blueprint.variable.diff -----------------------------------------------------------
+## blueprint.variable.diff -----------------------------------------------------------
 
 ## set.empty.values.to.NA -----------------------------------------------------------
 expect_equal(data.frame(a=c('a','b','',""))  %>% set.empty.values.to.NA, data.frame(a=c('a','b',NA,NA)))
