@@ -41,7 +41,7 @@ stop.if.no.var.column <- function(df)
 ##' @importFrom dplyr group_by
 ##' @importFrom dplyr do
 ##' @importFrom dplyr %>%
-validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,debug=FALSE,waves)
+validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,waves)
     {
         blueprint %>%
             blueprint.remove.column.rows    %>%
@@ -170,7 +170,7 @@ normalised.path.and.dir.exists <- function(filepath)
 ##' @importFrom rio import
 ##' @importFrom dplyr transmute
 ##' @importFrom dplyr %>%
-load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALSE)
+load.and.recode <- function(blueprint,fun=FALSE,wave=1,extended=FALSE)
 {
                                         #                         cat('recs:\n')
                                         #                          print(recs)
@@ -178,7 +178,6 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,debug=FALSE,extended=FALS
     if(fun)
     {
         ((blueprint$fun!='NA')&(!is.na(blueprint$fun))&(!is.nan(blueprint$fun)))  %>% which -> rep.pos
-        if(debug){   print(rep.pos)}
         if(extended){
                                         # if logging, execute the transformation in blueprint.variable.diff 
             paste0(blueprint$var[rep.pos],' %>% blueprint.variable.diff(fun="',blueprint$fun[rep.pos],'",name="',blueprint$var[rep.pos],'",wave="',wave,'")') -> blueprint$var[rep.pos]
@@ -329,13 +328,12 @@ return.not.existing.files <- function(blueprint)
 ##' @importFrom plyr llply
 ##' @importFrom stringr str_detect
 ##' @importFrom dplyr %>% 
-blueprint.remove.column.rows <- function(blueprint,debug=FALSE)
+blueprint.remove.column.rows <- function(blueprint)
 {
                                         #    print(blueprint[,1])
     ## Remove comment rows -----------------------------------------------------------
     llply(blueprint[,1],function(x){str_detect(x,'^ *#')})  %>% unlist %>% `!`  %>% which-> not.commentrows
                                         #    print(not.commentrows)
-    if(debug){cat('commentrows:',which(not.commentrows),'\n')}
     if(length(not.commentrows)>0){
         blueprint[not.commentrows,] -> blueprint
     }
@@ -359,7 +357,7 @@ blueprint.code.log <- function(message){
 ##' @importFrom dplyr transmute
 ##' @importFrom plyr llply
 ##' @importFrom dplyr %>%
-return.df.with.certain.vars <- function(df,...,debug=0)
+return.df.with.certain.vars <- function(df,...)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
@@ -380,7 +378,7 @@ return.df.with.certain.vars <- function(df,...,debug=0)
 
 ##' @importFrom dplyr transmute
 ##' @importFrom dplyr %>%
-return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos,debug=0)
+return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos)
 {
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
@@ -462,7 +460,6 @@ blueprint.wave.validator <- function(blueprint)
 ##' @param fun Logical vector wheter the functions from \code{fun} should be applied on the specified variables.
 ##' @param export.file Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.
 ##' @param waves A numeric vector specifying the waves that shall be included from the blueprint file. If NULL every wave will be merged.
-##' @param debug Will be removed when alpha.
 ##' @param logfile Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.
 ##' @param data.table Wheter to use the data.table package for merge process. (Minimal faster)
 ##' @param ... Optionally commands are passed to \code{\link[=rio]{import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
@@ -483,15 +480,14 @@ blue <- function(
                  waves=NULL,
                  logfile=FALSE,                      
                  data.table=TRUE,
-                 debug=FALSE,                 
                  ...
                  ){
                                         # requirements
                                         # Load Merge Data from XLS
     
-                                        # if(debug){cat(paste0('file: ',blueprint))}
     ## Logfile -----------------------------------------------------------
     ## Make default logfile path if missing logfile
+    # Will be removed when alpha
     if(is.character(logfile)){extended=TRUE}
     if(is.logical(logfile)){
         if(logfile)
@@ -509,7 +505,6 @@ blue <- function(
     {stop('You have to specify a path to a logfile since automatic replacement of the suffix was not possible. Try to set a logfile path argument or change it.')}
     if(file.exists(logfile)){unlink(logfile)}    
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
-                                        # if(debug){print('logger created')}
     start.message <- paste0('- Parsing blueprint file `',blueprint,'`.','\n- Logging to file `',logfile,'`.\n')
     cat(start.message)
     blueprint.log(Sys.time())
@@ -521,14 +516,10 @@ blue <- function(
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
     ## Import and validate blueprint -----------------------------------------------------------
     code.time <- Sys.time()    
-    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,debug=debug,waves=waves) -> blueprints
+    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,waves=waves) -> blueprints
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'wave' and 'blueprints'
     ## Convert blueprints to code -----------------------------------------------------------
-                                        # if(debug){print(blueprint)}
-    
-    
-                                        # if(debug){print(blueprints) }
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
     if(data.table){blueprint.code.log('suppressMessages(require(data.table,quietly = TRUE))')}
@@ -558,7 +549,6 @@ blue <- function(
         blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
         blueprint$file %>% str_detect(blueprint.main.file)  -> pos.main.file
         (pos.main.file & (pos.main.file %>% is.na %>% `!`)) -> pos.main.file
-                                        # if(debug)        {print(blueprint$wave                 )}
         blueprint[pos.main.file,] %>%
             load.and.recode(fun=fun,wave=wave,extended=extended) -> code.to.execute
         paste0(code.to.execute,'  -> main.data') -> code.to.execute
@@ -569,8 +559,6 @@ blue <- function(
         blueprint[ !blueprint[,'file'] == blueprint.main.file & !is.na(blueprint$file),] -> blueprint
 ### restrict to variables that are specified by a file reference !!! should be: also a link
 ### Add the additional files  ####################################################################################################
-                if(debug){       print(all.vars)}
-                if(debug) {print(blueprint$file)}
                           if(length(blueprint$file)>0){
                               for(x in unique(blueprint$file) )
                               {
@@ -597,7 +585,6 @@ blue <- function(
 # find link variables not specified in blueprints
                                   ((to.links %>% unlist %>% unique)    %in% add.blueprint$newvar) %>% `!` -> pos
                                   (to.links %>% unlist %>% unique)[pos] -> vars.to.add
-                                  if(debug){cat('vars.to.add:\n',vars.to.add)}
                                   links %>% process.links -> link.condition
                                         #        paste0('"',from.links,'"="',to.links,'"',collapse=',') -> link.condition
          #                         link.condition
@@ -655,7 +642,6 @@ blue <- function(
         return(df.wave.name)
     }) -> blueprints.data
 
-                                        # if(debug){print(blueprints.data)}
     blueprints.data$dfs  %>% unlist  -> dfs
     
                                         # paste0('rbind(',paste0(dfs,collapse=',          \n'),')   %>% tbl_df  -> final.df') -> code.to.execute
@@ -699,14 +685,13 @@ blue <- function(
 ##' @return Returns nothing. It is just used for the side effect of generating or opening the specified blueprint file.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
-##' @examples open_blue('/path/to/file.xlsx')
+##' @examples \dontrun{open_blue('/path/to/file.xlsx')}
 ##' @importFrom rio export
 ##' @importFrom utils browseURL
 ##' @importFrom dplyr %>%
 open_blue <- function(
-                          blueprint=paste0(getwd(),'/blueprint.xlsx'),
-                          waves=1,
-                          debug=FALSE
+                          blueprint,
+                          waves=1
                           )
 {
     blueprint %>% normalised.path.and.dir.exists  -> blueprint
@@ -722,7 +707,6 @@ open_blue <- function(
 |\n
 v\n'
         a.df[2,1:5] <- description
-        if(debug){return(a.df)}
     a.df %>% export(file=blueprint)
     cat(paste0('Written blueprint template to file ',blueprint,'.\n'))
     }
