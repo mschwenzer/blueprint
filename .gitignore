@@ -43,3 +43,6 @@ inst/doc
 /vignettes/blueprint.bbl
 /vignettes/blueprint.blg
 /vignettes/blueprint.html
+/tests/testthat/blue.R~
+/vignettes/latxlog
+/vignettes/texput.log

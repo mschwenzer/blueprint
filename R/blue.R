@@ -9,14 +9,12 @@ blueprint.check.every.specified.original.var.has.a.file  <- function(df)
             return(df)
     }
 
-
 ##' @importFrom dplyr %>%
 df.remove.non.standard.named.columns  <- function(df)
 {
     ## remove empty colums
     standard.names <- c('newvar','link','var','file','fun')
     (names(df)%in%standard.names)  %>%  `!` %>% which  -> to.drop
-    #print(to.drop)
     if(length(to.drop)>0){
         df[,-c(to.drop)] -> df
         }
@@ -55,7 +53,6 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
                    endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                                         # + the last column containing everything
                             length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
-        #print(blueprints.column.info)
                                         # Subset over the waves
         if(is.numeric(waves)){
             blueprints.column.info %>% filter(.$wave%in%c(waves)) ->         blueprints.column.info
@@ -172,8 +169,6 @@ normalised.path.and.dir.exists <- function(filepath)
 ##' @importFrom dplyr %>%
 load.and.recode <- function(blueprint,fun=FALSE,wave=1,extended=FALSE)
 {
-                                        #                         cat('recs:\n')
-                                        #                          print(recs)
                                         # find non-empty fun (rec) columns  / !!! replace by stringr::str_match / find out why it can be string "NA" which is a bug
     if(fun)
     {
@@ -190,9 +185,6 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,extended=FALSE)
     paste0(blueprint$newvar,'=',blueprint$var,collapse=',\n                         ') -> transmute.code
                                         # create a string that renames/selects with select and mutates afterwards
     paste0('rio::import("',blueprint$file[1],'")',paste0(' %>%\n        dplyr::transmute(',transmute.code,')')) -> code.to.execute
-                                        #                              print(eval.code)
-                                        # execute and return
-                                        #                              print(eval.code)
     return(code.to.execute)
 }
 
@@ -330,10 +322,8 @@ return.not.existing.files <- function(blueprint)
 ##' @importFrom dplyr %>% 
 blueprint.remove.column.rows <- function(blueprint)
 {
-                                        #    print(blueprint[,1])
     ## Remove comment rows -----------------------------------------------------------
     llply(blueprint[,1],function(x){str_detect(x,'^ *#')})  %>% unlist %>% `!`  %>% which-> not.commentrows
-                                        #    print(not.commentrows)
     if(length(not.commentrows)>0){
         blueprint[not.commentrows,] -> blueprint
     }
@@ -362,16 +352,12 @@ return.df.with.certain.vars <- function(df,...)
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
     eval(substitute(alist(...)))  %>%  sapply(toString)   -> vars.to.get
-                                        #    print(vars.to.get)
     vars.to.get %>% llply(function(x){exists(x,df)}) %>% unlist   %>% `!` %>% which -> not.existing.pos
-                                        #    print(vars.to.get[not.existing.pos])
     if (length(not.existing.pos>0))
     {
         vars.to.get[not.existing.pos]  %>% paste0(.,'=rep_len(NA_real_,nrow(df))') -> vars.to.get[not.existing.pos]
     }
-                                        #    print(vars.to.get)
     vars.to.get %>% paste0(collapse=',\n                                     ') %>%                               paste0('df %>% dplyr::transmute(',.,') -> df')                      -> code.to.execute
-                                        #    print(code.to.execute)
     eval(parse(text=code.to.execute))
     return(df)
 }
@@ -383,16 +369,14 @@ return.code.to.return.df.with.certain.vars_ <- function(all.vars,missing.var.pos
                                         # Return a data.frame containing certain variables also ordered by vars.to.get
                                         # vars not in
     
-                                        #    print(vars.to.get[not.existing.pos])
     transmute.vars <- all.vars
     if (length(missing.var.pos>0))
     {
                                         #            missing.vars  %>% paste0(.,'=rep_len(NA_real_,nrow(.))') -> transmute.code
         transmute.vars[missing.var.pos]  %>% paste0(.,'=NA_real_') -> transmute.vars[missing.var.pos]
     }
-                                        #    print(vars.to.get)
+
     transmute.vars %>% paste0(collapse=',\n                               ') %>% paste0('dplyr::transmute(',.,')')                      -> code.to.execute
-                                        #   print(code.to.execute)
     return(code.to.execute)
 }
 
@@ -544,7 +528,6 @@ blue <- function(
         blueprint.main.file <- blueprint.files[1]
                                         # vars in main file that shall be kept
         vars.to.get <- blueprint$var
-                                                # print(vars.to.get)
 ### Load main file ####################################################################################################
         blueprint.log(paste0('loading main file:',blueprint.main.file,'\n'))
         blueprint$file %>% str_detect(blueprint.main.file)  -> pos.main.file
@@ -565,15 +548,13 @@ blue <- function(
                                   blueprint.log(paste0('--- Adding additional variables from file:',x,'\n'))
 
                                         #x <- unique(blueprint$files)[1]
-                                        #print(blueprint)
                                         # variabels to replace in original frame
 
                                   blueprint[blueprint$file==x,] -> add.blueprint
                                         # variables that replace in replacement frame
                                   the.vars <- add.blueprint[,'var']
-                                        #print(the.vars)##
+
                                   links <-add.blueprint[,'link']
-                                        #print(blueprint)
                                   functions <-add.blueprint[,'fun']
                                   if(sum(is.na(links)&!is.na(the.vars))>0)
                                   {
@@ -602,26 +583,6 @@ blue <- function(
                                   blueprint.code.log(code.to.execute)
                                         #eval(parse(text=code.to.execute))
                                   }
-                                      ## codestoexecute <- which(blueprint$file==x&(grepl('`',blueprint$vars,perl=TRUE)))
-                                      ## for(a.row in codestoexecute)
-                                      ##     {
-                                      ##         print(paste('data','$',vars[a.row,1],' <- ', gsub('`','',blueprint$vars[a.row]),sep=''))
-                                      ##         eval(parse(text=paste('data','$',vars[a.row,1],' <- ', gsub('`','',blueprint$vars[a.row]),sep='')))
-                                      ##     }
-                                        #print(head(data))
-                                      
-
-                                        # what is done here?
-                                        #   print(vars[,1])
-                                        #nv <- length(vars[,1])
-                                        #names(data)[c(1:(nv))] <- vars[,1]
-                                        #names(data)[length(names(data))] <- 'year'
-                          ## Reocde data over here -----------------------------------------------------------
-
-                                        #                                                    vars.to.get
-                          ## Execute the code from the code -----------------------------------------------------------
-#                                  cat('####################################################################################################\n')
-         
                           }
         paste0('data.wave',wave) -> df.wave.name
         return.code.to.return.df.with.certain.vars_(all.vars,missing.var.pos) -> select.code
@@ -647,9 +608,7 @@ blue <- function(
                                         # paste0('rbind(',paste0(dfs,collapse=',          \n'),')   %>% tbl_df  -> final.df') -> code.to.execute
 
     
-#    blueprint.code.log(code.to.execute)
     blueprint.code.log('final.df %>% tbl_df -> final.df')
-                                        #    dfs%>% do.call(rbind,.) %>% tbl_df     -> final.df
 #    cat(paste0('\nTime taken to produce code.file: ',format(round(Sys.time()- code.time,2),unit='sec'),'\n\n'))
     cat(paste0('\n- Starting iterations of import',ifelse(fun,', transformation',''),ifelse(extended,',',' and'),' merge',ifelse(extended,' and compution of extended stats',''),' ...'))
     eval.time <- Sys.time()
@@ -713,3 +672,7 @@ v\n'
     browseURL(paste0('file://', blueprint))
     invisible(blueprint)
     }
+
+## Local Variables:
+## ess-r-package-info: ("blueprint" . "/doc/wissenschaft/blueprint")
+## End:

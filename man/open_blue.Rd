@@ -4,8 +4,7 @@
 \alias{open_blue}
 \title{open_blue creates or loads blueprint-file .}
 \usage{
-open_blue(blueprint = paste0(getwd(), "/blueprint.xlsx"), waves = 1,
-  debug = FALSE)
+open_blue(blueprint, waves = 1)
 }
 \arguments{
 \item{blueprint}{Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link[=rio]{import}}. See the vignette for details of the structure.}
@@ -19,7 +18,7 @@ Returns nothing. It is just used for the side effect of generating or opening th
 \code{"open_blue"} creates or loads blueprint-files of various file formats.
 }
 \examples{
-open_blue('/path/to/file.xlsx')
+\dontrun{open_blue('/path/to/file.xlsx')}
 }
 \author{
 Marc Schwenzer <m.schwenzer@uni-tuebingen.de>

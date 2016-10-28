@@ -5,7 +5,7 @@
 \title{\code{blue} - Read a blueprint file and return a merged data frame.}
 \usage{
 blue(blueprint = "a.blueprint", fun = TRUE, export.file = NULL,
-  waves = NULL, logfile = FALSE, data.table = TRUE, debug = FALSE, ...)
+  waves = NULL, logfile = FALSE, data.table = TRUE, ...)
 }
 \arguments{
 \item{blueprint}{A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link[=rio]{import}} function. See the vignette for details of the structure of a blueprint.}
@@ -19,8 +19,6 @@ blue(blueprint = "a.blueprint", fun = TRUE, export.file = NULL,
 \item{logfile}{Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.}
 
 \item{data.table}{Wheter to use the data.table package for merge process. (Minimal faster)}
-
-\item{debug}{Will be removed when alpha.}
 
 \item{...}{Optionally commands are passed to \code{\link[=rio]{import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.}
 }

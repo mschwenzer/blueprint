@@ -1,21 +1,45 @@
 ---
 title: "Introduction to blueprint"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:  
+# - pdf_document
+- html_document
 vignette: >
   %\VignetteIndexEntry{Introduction to blueprint}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
-# Overview
-Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data file (a "blueprint") that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. Blueprints define which variables from files are imported and (left) joins variables from other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile rio-package\ for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (operations seqentially applied to the original variable from the corresponding file \emph{before} it is merged into the final data frame). Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes more versatile, clearer and more easy expandable. The workhorse-functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages dplyr and data.table (). 
 
-# Merge same cases from different files
-In blueprint the merge process is specified by a so-called blueprint file into which we enter data in a standard Spreadsheet-Application like Excel or Open Office Spreadsheet. To enter data, we first have to create a new blueprint template. This can be done easily by entering:
-\dontrun{open_blue('my.blueprint.name.csv')}
+
+# Overview
+Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data file (a "blueprint") that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. These files define which variables are imported and how they have to be (left-)joined with other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile \link[=rio]{import}-function for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (sequentially applied functions) that will transform the variable from the corresponding file `before` they will included into the final data frame). Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes more versatile, clearer and more easy expandable. The functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages \link[=dplyr] and \link[=data.table]. 
+
+
+# Creating blueprint files
+In blueprint the merge process is specified by a so-called blueprint file. This file controls the merge process and can be edited inside a standard Spreadsheet-Application like Excel or Open Office Spreadsheet or other Editors. A convenient way to create a new blueprint template is to enter:
+```r
+open_blue('my.blueprint.name.csv')
+```
 Alternatively we could change the suffix of the filename to xlsx to open an Excel-File:
-\dontrun{open_blue('my.blueprint.name.xlsx')}
-Every row represents an unique variable of a final data.frame. The name of this variable can be chosen according to the needs of the analysis that is specified in column one ('newvar'). Assume we have 2 files 'individual.csv' and 'household.csv' and want to import the variables '/idno/, '/gender/' and '/birthY/' from file 'individual.csv'. This original variable names have to be written into the column var1 like in figure X. 
+
+```r
+open_blue('my.blueprint.name.xlsx')
+```
+
+# Structure of blueprint files
+Table 1 contains the basic structure of a blueprint file.
+
+```{r xtable, echo=FALSE, results='asis'}
+library(tibble)
+library(xtable)
+tribble(~newvar,~var1,~file1,~link1,~fun1,~var2,~file2,~link2,~fun2,~`...`) -> a
+a[1,] <- '                '
+a %>% as.data.frame %>% xtable  %>% print(type='html')
+```
+Table: Table 1: The overall structure of a blueprint file
+
+Every row represents an unique variable of a final data.frame. The name of this variable can be chosen according to the needs of the analysis that is specified in column one `newvar`. Assume we have two files `individual.csv` and `household.csv` and want to import the variables `idno`, `gender` and `birthY` from file `individual.csv`. This original variable names have to be written into the column `var1` like in table 1. 
+
 
 | newvar             | var1     | file1          | link1             | fun1 |
 |---|---|---|---|---
@@ -27,6 +51,7 @@ Every row represents an unique variable of a final data.frame. The name of this 
 | household.income   | income   | household.csv  | household.id=idno |      |
 | household.property | property | household.csv  | household.id=idno |      |
 
+Table: Table 1: A basic 
 
 Adding the additional variable '/household income/' and '/property/' from the seperate file `household.csv` typically includes left joining them, which equals to adding columns for additional variables and keeping only the values of household.csv of those units that are also in individual.csv. For this we have to define conditions which rows in the files individual.csv and household.csv relate to the same unit. This is achieved by specifiying the column link for the files to add from. Relying on the syntax of /dplyr::left_join/ (while leaving out apostrophes) the condition expresses which variables must be equal: You give the new variable name (specified in newvar) and the name of the matching old variable name in the original data file that is to be added: /name.in.newvar=old.variable.name.in.data.file.to.merge/
 Assuming e.g. that in file 'household.csv' every household has an id number called '/idno/' we would specify the link condition /household.id=idno/. Several link conditions can be combined by comma. The first part relates to new variable name specified as '/newvar/', the second to the original name in the data file to merge. If only single variables are given, it is assumed that the variable names are the same (name of newvar and var in a file to add are identical).
@@ -35,17 +60,21 @@ If the variables used inside of the link condition are not in the /var1.../ colu
 When a blueprint has been modified and saved in a external application, the merged data can be imported into R by simply stating:
 
 
-\dontrun{my.df <- blue('my.blueprint.name.csv')}
+```r
+my.df <- blue('my.blueprint.name.csv')
+```
 
 
-\code{my.df} is a new data.frame with the selected variables from individual.csv plus the household variables that match the link condition.
+*my.df* is a new data.frame with the selected variables from individual.csv plus the household variables that match the link condition.
 
 # Transforming variables by functions
 By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let's say we want to recode gender from /0/ to '/Male/' and from /1/ to '/Female/'. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values '/Male/' and '/Female/'. Note that a fun entry can be used to execute a whole chain of transformations (seperated by '%>%'). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%>%/. Also note that e.g. recoding  different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.
 
 # Merging different waves
 Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,...) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the waves argument using:
-\code{open.blue('my.blueprint.name2.xlsx,waves=1:2)}
+```
+open.blue('my.blueprint.name2.xlsx,waves=1:2)
+```
 Figure XXX shows a more advandced blueprint file reflecting this structure. 
 
 |-------------+----------+----------+------------+------+---------+------------+-------+------------|

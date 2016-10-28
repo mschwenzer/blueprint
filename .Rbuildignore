@@ -7,3 +7,4 @@ CONTRIBUTING.md
 ^revdep$
 ^.*\.Rproj$
 .*\~$
+tests/efficiency_test.R
