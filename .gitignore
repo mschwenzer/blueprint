@@ -45,3 +45,7 @@
 /tests/testthat/blue.R~
 /vignettes/latxlog
 /vignettes/texput.log
+/R/#blue.R#
+/R/.#blue.R
+/example_blueprint.blueprint.log.txt
+/sampledata.R~

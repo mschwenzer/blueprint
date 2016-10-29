@@ -676,3 +676,29 @@ v\n'
 ## Local Variables:
 ## ess-r-package-info: ("blueprint" . "/doc/wissenschaft/blueprint")
 ## End:
+
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title Creates a folder with example files
+##'
+##' This folder will be named 'blueprint_example' and contains the example files 'INT_STU12_DEC03_synth.sav','INT_SCQ12_DEC03_synth.sav','example_blueprint1.xlsx','example_blueprint1.csv','example_blueprint2.xlsx','example_blueprint2.csv'.
+##' @return NULL
+##' @author Marc Schwenzer
+##' @export
+##' @importFrom rio export
+##' @importFrom dplyr %>%
+blue_example <- function()
+{
+    dir.create('blueprint_example')
+    load(
+        base::system.file("extdata", "examples.rda", package = "blueprint")
+    )
+    INT_STU12_DEC03_synth  %>% export('blueprint_example/INT_STU12_DEC03_synth.sav')
+    INT_SCQ12_DEC03_synth  %>% export('blueprint_example/INT_SCQ12_DEC03_synth.sav')
+    example_blueprint1 %>% export('blueprint_example/example_blueprint1.xlsx')
+    example_blueprint1 %>% export('blueprint_example/example_blueprint1.csv')    
+    example_blueprint2 %>% export('blueprint_example/example_blueprint2.xlsx')
+    example_blueprint2 %>% export('blueprint_example/example_blueprint2.csv')
+    invisible(NULL)
+}    

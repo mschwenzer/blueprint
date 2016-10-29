@@ -12,46 +12,135 @@ vignette: >
 
 
 # Overview
-Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data file (a "blueprint") that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. These files define which variables are imported and how they have to be (left-)joined with other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile \link[=rio]{import}-function for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (sequentially applied functions) that will transform the variable from the corresponding file `before` they will included into the final data frame). Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes more versatile, clearer and more easy expandable. The functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages \link[=dplyr] and \link[=data.table]. 
+Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data file (a "blueprint") that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. These files define which variables are imported and how they have to be (left-)joined with other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile \code{\link[=rio]{import}}-function for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (sequentially applied functions) that will transform the variable from the corresponding file `before` they are included into the final data framel. Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes faster, clearer and more easy expandable. The functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages \link[=dplyr] and \link[=data.table]. 
 
-
-# Creating blueprint files
-In blueprint the merge process is specified by a so-called blueprint file. This file controls the merge process and can be edited inside a standard Spreadsheet-Application like Excel or Open Office Spreadsheet or other Editors. A convenient way to create a new blueprint template is to enter:
-```r
+# Creation and Editing of Blueprint-files
+In blueprint the merge process is specified by a so-called blueprint file. This file specifies rules that control from how and where data is imported. It can be edited with a standard Spreadsheet-Application like Excel or Open Office Spreadsheet or other Editors. A convenient way to create a new template for such a blueprint file is to enter:
+```
 open_blue('my.blueprint.name.csv')
 ```
 Alternatively we could change the suffix of the filename to xlsx to open an Excel-File:
 
-```r
-open_blue('my.blueprint.name.xlsx')
 ```
+open_blue('my.blueprint.name.xlsx')
+
+```
+
+The package will try to create a template file with the according format, at the given path and afterwards will open it. If the file allready exists, it will be just opened. Afterwards this files can be edited. Note that you will allways have to save to bring changes into effect.
 
 # Structure of blueprint files
-Table 1 contains the basic structure of a blueprint file.
+So what to enter into the template? Table 0 contains the basic structure of a blueprint file.
 
-```{r xtable, echo=FALSE, results='asis'}
-library(tibble)
-library(xtable)
-tribble(~newvar,~var1,~file1,~link1,~fun1,~var2,~file2,~link2,~fun2,~`...`) -> a
-a[1,] <- '                '
-a %>% as.data.frame %>% xtable  %>% print(type='html')
+|   newvar  |      var1|                      file1|                    link1| fun1| var2|file2|link2|fun2| ...|
+|---|---|---|---|---|---|---|---|---|---|
+| new name of variable 1 | {old name of var1 in first data file} |  |   |   | {old name of var1 in second data file} |   |   |   |  |
+| new name of variable 2 | {old name of var2 in first data file} |  |   |   | {old name of var2 in second data file}  |   |   |   |   |
+
+Table: Table 0: The basic structure of a blueprint file
+
+Every row represents an unique variable of a final data.frame. The name of this variable can be chosen according to the needs of the analysis that is specified in the firs column (by entering this name into the column `newvar`). 
+
+Let's test this structure by using random data from OECD's PISA (Programme for International Student Assessment) data. 
+
+## Example 1: Import certain variables from a file
+
+First of all we have to generate an directory of example files.
+
+```blue_example()```
+
+The file `blueprint_example/INT_STU12_DEC03_synth.sav` is a synthesized version of original PISA data stored in a SPSS-file (which is indicated by the suffix `.sav`). It contains the variables `StIDStd` (a unique id of the student), `CNT` (the country where the student was tested), `ST04Q01` (gender), `AGE`, `W_FSTUWT` (weight) and `PV1MATH` (a test score in math.)
+
+In the first example we will just load, select and rename this variables from the SPSS file by using example_blueprint1 (which exist in two versions). 
+
+To open the example in an editor you can use
+
+```open_blue('blueprint_example/example_blueprint1.csv')```
+
+or
+
+```open_blue('blueprint_example/example_blueprint1.xslx')```
+
+The content of this blueprint file is shown in Table 1. It states that 6 variables are to be imported from the file `blueprint_example/INT_STU12_DEC03_synth.sav`. The variable `ST04Q01` e.g. will be renamed to `gender`. 
+
+
+|     newvar|      var1|                      file1|                    link1| fun1|
+|--- |---|---|---|---|
+|    studid|    StIDStd  |blueprint_example/INT_STU12_DEC03_synth.sav           |||
+|   country |     CNT   | blueprint_example/INT_STU12_DEC03_synth.sav           |||
+|    gender  |  ST04Q01|  blueprint_example/INT_STU12_DEC03_synth.sav           |||
+|     age     |   AGE    |blueprint_example/INT_STU12_DEC03_synth.sav           |||
+| final.weight |W_FSTUWT |blueprint_example/INT_STU12_DEC03_synth.sav           |||
+| math.score1  |PV1MATH  |blueprint_example/INT_STU12_DEC03_synth.sav           |||
+
+Table: Table 1: example_blueprint1
+
+The following code executes the rules in this blueprint and stores the data in a new object (`example1`).
+```r
+example1 <- blue('blueprint_example/example_blueprint1.xlsx')
+example1
 ```
-Table: Table 1: The overall structure of a blueprint file
 
-Every row represents an unique variable of a final data.frame. The name of this variable can be chosen according to the needs of the analysis that is specified in column one `newvar`. Assume we have two files `individual.csv` and `household.csv` and want to import the variables `idno`, `gender` and `birthY` from file `individual.csv`. This original variable names have to be written into the column `var1` like in table 1. 
+```
+ # A tibble: 2,000 × 7
+    studid country gender   age final.weight math.score1  wave
+     <chr>   <chr>  <dbl> <dbl>        <dbl>       <dbl> <dbl>
+ 1   06880     GBR      2 15.67     142.6006    544.7188     1
+ 2   02864     DEU      1 15.42     125.2389    522.1296     1
+ 3   01916     DEU      2 15.33       8.8975    607.0338     1
+ 4   04419     GBR      2 15.25      18.5177    553.2871     1
+ 5   01823     DEU      1 15.92     158.2145    466.5135     1
+ 6   01650     DEU      1 16.17     172.7704    316.4901     1
+ 7   06297     GBR      1 15.33     179.7536    373.8199     1
+ 8   04957     GBR      1 16.00     207.3544    455.2189     1
+ 9   00393     GBR      2 15.50       9.1159    612.4864     1
+ 10  04696     DEU      1 15.92       4.1366    576.1100     1
+ # ... with 1,990 more rows
+```
+
+Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do represent waves (which are merged as additional rows).
+
+## Example 2: Adding variables from another file (Left-joining)
+In this example we want to add school characteristics to the data of students. The file `blueprint_example/INT_SCQ12_DEC03_synth.sav` contains this variables. 
+
+```
+# open_blue('blueprint_example/example_blueprint2.csv')
+open_blue('blueprint_example/example_blueprint2.xlsx')
+```
 
 
-| newvar             | var1     | file1          | link1             | fun1 |
+
+|      newvar|      var1|                      file1|                              link1|            fun1|
 |---|---|---|---|---
-| individual.id      | idno     | individual.csv |                   |      |
-| gender             | gend     | individual.csv |                   |      |
-| birth.year         | birthY   | individual.csv |                   |      |
-| household.id       | houseID  | individual.csv |                   |      |
-|   |   |   |   |   |
-| household.income   | income   | household.csv  | household.id=idno |      |
-| household.property | property | household.csv  | household.id=idno |      |
+|    studid|    StIDStd|  blueprint_example/INT_STU12_DEC03_synth.sav|||
+|    schid|     SCHOOLID| blueprint_example/INT_STU12_DEC03_synth.sav|||
+|   country|      CNT|    blueprint_example/INT_STU12_DEC03_synth.sav|||
+|    gender|    ST04Q01|  blueprint_example/INT_STU12_DEC03_synth.sav|||
+|     age|        AGE|    blueprint_example/INT_STU12_DEC03_synth.sav|||
+| final.weight| W_FSTUWT| blueprint_example/INT_STU12_DEC03_synth.sav|||
+|  math.score|  PV1MATH|  blueprint_example/INT_STU12_DEC03_synth.sav|||
+|  | | | | | |
+| school.size|  SCHSIZE|  blueprint_example/INT_SCQ12_DEC03_synth.sav |country=CNT,schid=SCHOOLID||
+|class.size   |CLSIZE  |blueprint_example/INT_SCQ12_DEC03_synth.sav |country=CNT,schid=SCHOOLID||
 
-Table: Table 1: A basic 
+Table: Table 2: example_blueprint2
+
+
+```
+# A tibble: 2,000 × 10
+   studid   schid country gender   age final.weight math.score school.size class.size  wave
+    <chr>   <chr>   <chr>  <dbl> <dbl>        <dbl>      <dbl>       <dbl>      <dbl> <dbl>
+1   06880 0000275     GBR      2 15.67     142.6006   544.7188        1644         28     1
+2   02864 0000131     DEU      1 15.42     125.2389   522.1296        1381         18     1
+3   01916 0000087     DEU      2 15.33       8.8975   607.0338         400         18     1
+4   04419 0000179     GBR      2 15.25      18.5177   553.2871         346         18     1
+5   01823 0000083     DEU      1 15.92     158.2145   466.5135        1083         28     1
+6   01650 0000075     DEU      1 16.17     172.7704   316.4901         597         28     1
+7   06297 0000253     GBR      1 15.33     179.7536   373.8199        1270         28     1
+8   04957 0000200     GBR      1 16.00     207.3544   455.2189        1272         28     1
+9   00393 0000016     GBR      2 15.50       9.1159   612.4864        1242         23     1
+10  04696 0000217     DEU      1 15.92       4.1366   576.1100         648         28     1
+# ... with 1,990 more rows
+```
 
 Adding the additional variable '/household income/' and '/property/' from the seperate file `household.csv` typically includes left joining them, which equals to adding columns for additional variables and keeping only the values of household.csv of those units that are also in individual.csv. For this we have to define conditions which rows in the files individual.csv and household.csv relate to the same unit. This is achieved by specifiying the column link for the files to add from. Relying on the syntax of /dplyr::left_join/ (while leaving out apostrophes) the condition expresses which variables must be equal: You give the new variable name (specified in newvar) and the name of the matching old variable name in the original data file that is to be added: /name.in.newvar=old.variable.name.in.data.file.to.merge/
 Assuming e.g. that in file 'household.csv' every household has an id number called '/idno/' we would specify the link condition /household.id=idno/. Several link conditions can be combined by comma. The first part relates to new variable name specified as '/newvar/', the second to the original name in the data file to merge. If only single variables are given, it is assumed that the variable names are the same (name of newvar and var in a file to add are identical).
@@ -76,18 +165,6 @@ Repeated surveys typically are delivered as so-called waves. Blueprint makes it 
 open.blue('my.blueprint.name2.xlsx,waves=1:2)
 ```
 Figure XXX shows a more advandced blueprint file reflecting this structure. 
-
-|-------------+----------+----------+------------+------+---------+------------+-------+------------|
-| newvar      | var1     | file1    | link1      | fun1 | var2    | file2      | link2 | fun2       |
-|-------------+----------+----------+------------+------+---------+------------+-------+------------|
-| i.id        | idno     | i.w1.dta |            |      | ID      | i.w2.Rdata |       |            |
-| gender      | gend     | i.w1.dta |            |      | gend    | i.w2.Rdata |       |            |
-| birth.year  | birthY   | i.w1.dta |            |      | birth   | i.w2.Rdata |       |            |
-| hh.id       | houseID  | i.w1.dta |            |      | houseID | iw.2.Rdata |       |            |
-| ###         |          |          |            |      |         |            |       |            |
-| hh.income   | income   | h.w2.dta | hh.id=idno |      |         | h.w2.csv   |       | hh.id=idno |
-| hh.property | property | h.w2.dta | hh.id=idno |      |         | h.w2.csv   |       | hh.id=idno |
-|-------------+----------+----------+------------+------+---------+------------+-------+------------|
 
 Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.
 
@@ -132,19 +209,25 @@ Note the difference between e.g. /i.id/ stemming from a column in the file i.w1.
 Assume you have 80 weight variables specified by rep.weight1 to rep.weight80. You can specify these in var1 as /rep.weight[1:80]/. The rows containing brackets will be expanded to 80 additional rows with the specific name, resulting in the import (and if specified also individual transformation) of all of this variables.
 
 # File formats for importing and exporting.
-When importing files the package /blueprint/ relies on the function /import/ from the package /rio/. This package recognises the most frequently used file formats based on their corresponding suffix as listed in Figure XXX. This applies to loading blueprint files as well as data file specified in this data files.
+When importing files the functions `blue()` and `open_blue()` rely on the function `import` from the package `rio`. This package recognises the most frequently used file formats based on their corresponding suffix. This applies to loading blueprint files as well as data file specified in this data files. The most frequent formats are listed in Table 6. For a full list of file formats that can be loaded with blueprint, have a look at [LINK RIO].
+
 | Suffix                     | Assumed file format |
-|----------------------------+---------------------|
+|---|---|
 | R binary file              | .Rdata              |
-| Stata files                | .rda                |
+| Stata files                | .dta             |
 | SPSS files                 | .sav                |
 | Comma seperated Text files | .csv                |
 | HTML files                 | .html               |
 | Excel files                | .xlsx               |
 | Open Spreadsheet files     | .ods                |
-|----------------------------+---------------------|
-Note that additional arguments of blue are postponed to the function import resulting in additional specifications for import process. If you e.g. want to import the specific spreadsheet "MyData" in a Excel file (default would be the first Spreadsheet) it can be selected by specifying a /which/ argument.
-/blue('/path/to/blueprint.file.xlx',which='MyData')/
+
+Table: Table 6: Common file formats used with blueprint. 
+
+Note that additional arguments of blue are transferred to the function `import()` which can be used for additional specifications of the import process. If you e.g. want to import the specific spreadsheet "MyData" in a Excel file (default would be to use the first Spreadsheet) it can be selected by specifying the `which` argument.
+
+```
+blue('/path/to/blueprint.file.xlx',which='MyData')
+```
 
 # Exporting files
 By giving the argument /export.file/, e.g. blue(..., export.file='/path/to/file.csv') the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.
