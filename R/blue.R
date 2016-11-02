@@ -628,7 +628,7 @@ source(codefile,local=TRUE)
         write.time <- Sys.time()
         export(final.df,file=export_file)
         cat(paste0('took ',format(round((Sys.time()-write.time),1),unit='sec'),'.\n'))
-        blueprint.log(paste0('--- Written data.frame to file:',export_filev,'.'))
+        blueprint.log(paste0('--- Written data.frame to file:',export_file,'.'))
         return(invisible(final.df))
     }
     else{
