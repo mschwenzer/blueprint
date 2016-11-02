@@ -1,0 +1,12 @@
+##' blue_set()
+##'
+##' Easily set a default blueprint file. This is taken into account by blue(), blue_open(), blue_info() and alike functions.
+##' @title blue_set
+##' @param blueprint 
+##' @return 
+##' @author Marc Schwenzer
+##' @export
+blue_set <- function(blueprint)
+{
+    options(blueprint_file=blueprint)
+    }
