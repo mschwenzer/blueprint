@@ -501,6 +501,8 @@ blue <- function(
     ## Import and validate blueprint -----------------------------------------------------------
     code.time <- Sys.time()    
     rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,waves=waves) -> blueprints
+
+        rio::import(file='/Users/eur/Documents/wissenschaft/data/ess/data/ESS3e03_5/ESS3e03_5.Rdata') %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,waves=waves) -> blueprints
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'wave' and 'blueprints'
     ## Convert blueprints to code -----------------------------------------------------------
@@ -612,7 +614,7 @@ blue <- function(
 #    cat(paste0('\nTime taken to produce code.file: ',format(round(Sys.time()- code.time,2),unit='sec'),'\n\n'))
     cat(paste0('\n- Starting iterations of import',ifelse(fun,', transformation',''),ifelse(extended,',',' and'),' merge',ifelse(extended,' and compution of extended stats',''),' ...'))
     eval.time <- Sys.time()
-    source(codefile)
+    source(codefile,local=TRUE)
     blueprint.log('')        
     blueprint.log(Sys.time())
     blueprint.log('')    
