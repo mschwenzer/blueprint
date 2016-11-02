@@ -653,21 +653,19 @@ source(codefile,local=TRUE)
 ##' @importFrom dplyr %>%
 open_blue <- function(
                           blueprint=options()$'blueprint_file',
-                          waves=1
+                          chunks=20
                           )
 {
     blueprint %>% normalised.path.and.dir.exists  -> blueprint
     if(!file.exists(blueprint)){
         c('var','file','link','fun') -> varnams
-    c('newvar',paste0(rep(varnams,times=waves),sort(rep((1:waves),times=4))))-> varnams
+    c('newvar',paste0(rep(varnams,times=chunks),sort(rep((1:chunks),times=4))))-> varnams
         paste0(varnams,'=c("","")',collapse=',')-> varnams
-        c('# The new name of the variable (that merges the waves).','The original variable in the data.set','The original file that does contain this variable','A function or pipe of functions that is executed on the orignal variable var1 (e.g. for recoding)','Specifications of the variables that link the data') -> description
+        c('# The new name of the variable (that merges the data files of the chunk).','The original variable in the data.set','The original file that does contain this variable','A function or pipe of functions that is executed on the orignal variable var1 (e.g. for recoding)','Specifications of the variables that link the data') -> description
         eval(parse(text=paste0('data.frame(',varnams,',stringsAsFactors=FALSE)'))) -> a.df
-        a.df[1,1] <- '#'
-        a.df[1,c(2+4*((1:waves)-1))]<-paste0(c('wave'),1:waves)
-        a.df[1,c(5+4*((1:waves)-1))]<-'^\n
-|\n
-v\n'
+        a.df[1,1] <- '# Chunk'
+        a.df[1,c(2+4*((1:chunks)-1))]<-paste0('# ',1:chunks)
+        a.df[1,c(5+4*((1:chunks)-1))]<-''
         a.df[2,1:5] <- description
     a.df %>% export(file=blueprint)
     cat(paste0('Written blueprint template to file ',blueprint,'.\n'))
