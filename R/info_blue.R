@@ -10,7 +10,9 @@
 ##' @export
 ##' @importFrom stringr str_detect
 ##' @importFrom dplyr %>%
-info_blue  <- function(blueprint=options('blueprint_file'),waves,searchstr=NULL){
+info_blue  <- function(blueprint=options()$'blueprint_file',
+                      waves,
+                       searchstr=NULL){
     import(blueprint)  -> blueprint
     names(blueprint)  %>% str_detect('file') %>% which %>% .[waves] -> thecol
     blueprint[,thecol] %>% na.omit %>% .[1]  -> file

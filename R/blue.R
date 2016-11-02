@@ -458,7 +458,7 @@ blueprint.wave.validator <- function(blueprint)
 ##' @importFrom rio export
 ##' @importFrom dplyr %>%
 blue <- function(
-                 blueprint=options('blueprint_file'),
+                 blueprint=options()$'blueprint_file',
                  fun=TRUE,                 
                  export.file=NULL,
                  waves=NULL,
@@ -652,7 +652,7 @@ source(codefile,local=TRUE)
 ##' @importFrom utils browseURL
 ##' @importFrom dplyr %>%
 open_blue <- function(
-                          blueprint=options('blueprint_file'),
+                          blueprint=options()$'blueprint_file',
                           waves=1
                           )
 {

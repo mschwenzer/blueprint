@@ -4,8 +4,9 @@
 \alias{blue}
 \title{\code{blue} - Read a blueprint file and return a merged data frame.}
 \usage{
-blue(blueprint = "a.blueprint", fun = TRUE, export.file = NULL,
-  waves = NULL, logfile = FALSE, data.table = TRUE, ...)
+blue(blueprint = options("blueprint_file"), fun = TRUE,
+  export.file = NULL, waves = NULL, logfile = FALSE, data.table = TRUE,
+  ...)
 }
 \arguments{
 \item{blueprint}{A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link[=rio]{import}} function. See the vignette for details of the structure of a blueprint.}
