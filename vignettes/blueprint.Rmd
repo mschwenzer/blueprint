@@ -232,7 +232,7 @@ blue('/path/to/blueprint.file.xlx',which='MyData')
 ```
 
 # Exporting files
-By giving the argument /export.file/, e.g. blue(..., export.file='/path/to/file.csv') the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.
+By giving the argument /export_file/, e.g. blue(..., export_file='/path/to/file.csv') the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.
 
 # Aggregation of data
 Will follow.
