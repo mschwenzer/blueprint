@@ -123,11 +123,11 @@ $(document).ready(function () {
 
 <div id="overview" class="section level1">
 <h1>Overview</h1>
-<p>Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data file (a “blueprint”) that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. These files define which variables are imported and how they have to be (left-)joined with other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile -function for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (sequentially applied functions) that will transform the variable from the corresponding file <code>before</code> they are included into the final data framel. Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes faster, clearer and more easy expandable. The functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages and .</p>
+<p>Modern data users face the need to combine very different data sources which can easily become confusing. The R-package blueprint offers the opportunity to select, combine and transform data in an easy and intuitive way by using a meta-data files (called “blueprint”) that can be easily edited with a chosen Spreadsheet application or text editor capable of e.g. saving the file formats OpenOffice Calc, Excel, CSV, HTML. Merging variables that are split over dozens of different files is done by entering the absolute necessary information into a text-based meta-file and let the package do the rest. These files define which variables are imported and how they have to be (left-)joined with other files. Blueprint is also best suited for the needs of joining longitudinal data and unifying variable names that changed across different waves into one new variable. By relying on the versatile <code>import</code>-function for file import it offers the opportunity to handle very different kind of data formats (for the imported data as well as the blueprint-files.). Every variable can be transformed by functions or a chain of functions (sequentially applied functions) that will transform the variable from the corresponding file <code>before</code> they are included into the final data framel. Repetitive recoding of similar variables becomes very easy. By relying on meta-files data-processing becomes faster, clearer and more easy expandable. The functions that merge and transform data in the background rely mainly on functions from the brilliant and comparable fast packages <code>dplyr</code> and <code>data.table</code>.</p>
 </div>
 <div id="creation-and-editing-of-blueprint-files" class="section level1">
 <h1>Creation and Editing of Blueprint-files</h1>
-<p>In blueprint the merge process is specified by a so-called blueprint file. This file specifies rules that control from how and where data is imported. It can be edited with a standard Spreadsheet-Application like Excel or Open Office Spreadsheet or other Editors. A convenient way to create a new template for such a blueprint file is to enter:</p>
+<p>In blueprint the merge process is specified by a so-called blueprint file. This file specifies rules that control from where and how data is imported. It can be edited with a standard Spreadsheet-Application like Excel or Open Office Spreadsheet or other Editors. A convenient way to create a new template for such a blueprint file is to enter:</p>
 <pre><code>open_blue('my.blueprint.name.csv')</code></pre>
 <p>Alternatively we could change the suffix of the filename to xlsx to open an Excel-File:</p>
 <pre><code>open_blue('my.blueprint.name.xlsx')
@@ -377,10 +377,6 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 <p><em>my.df</em> is a new data.frame with the selected variables from individual.csv plus the household variables that match the link condition.</p>
 </div>
 </div>
-<div id="transforming-variables-by-functions" class="section level1">
-<h1>Transforming variables by functions</h1>
-<p>By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let’s say we want to recode gender from /0/ to ‘/Male/’ and from /1/ to ‘/Female/’. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values ‘/Male/’ and ‘/Female/’. Note that a fun entry can be used to execute a whole chain of transformations (seperated by ‘%&gt;%’). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%&gt;%/. Also note that e.g. recoding different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.</p>
-</div>
 <div id="merging-different-waves" class="section level1">
 <h1>Merging different waves</h1>
 <p>Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,…) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the waves argument using:</p>
@@ -388,8 +384,12 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 <p>Figure XXX shows a more advandced blueprint file reflecting this structure.</p>
 <p>Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.</p>
 </div>
-<div id="source-code" class="section level1">
-<h1>Source code</h1>
+<div id="transformation-of-variables" class="section level1">
+<h1>Transformation of variables</h1>
+<p>By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let’s say we want to recode gender from /0/ to ‘/Male/’ and from /1/ to ‘/Female/’. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values ‘/Male/’ and ‘/Female/’. Note that a fun entry can be used to execute a whole chain of transformations (seperated by ‘%&gt;%’). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%&gt;%/. Also note that e.g. recoding different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.</p>
+</div>
+<div id="extended-logging" class="section level1">
+<h1>Extended logging</h1>
 <p>Blueprint by default creates a corresponding .R code file containing all operations necessary to merge the data, by default written to /filepath_without_extension.blueprint.code.R/. If you choose to do so you can use, edit and share this standalone file without the need to have the blueprint package installed. # Logging and descriptives of the merging / transfomation process</p>
 <p>Blueprint is constructed to not be very verbose when called. Nonetheless it has a logging feature that can be activated by setting /blue(…,logfile=TRUE)/. In this case a extended logfile is created that contains also information on the transformation process (recode table, descriptives, distribution and information about automatic type conversions, statistics on dimension of the data). The parameter /logfile/ is set to /FALSE/ by default, only standard information will be written to this file. If you set logfile to a character string (by e.g. /blue(…,logfile=‘a.file.txt’)/), an extended logfile will be written to this path. If you don’t specify a path, the name will be resembled by the name of the blueprint file The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.</p>
 <pre><code>----Transformation. Variable `ST03Q01`  (wave 1): recode(`2`=0L,`1`=1L,.default=NA_integer_)  ----------------------------- 
@@ -417,9 +417,9 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 <h1>Selection of multiple variables</h1>
 <p>Assume you have 80 weight variables specified by rep.weight1 to rep.weight80. You can specify these in var1 as /rep.weight[1:80]/. The rows containing brackets will be expanded to 80 additional rows with the specific name, resulting in the import (and if specified also individual transformation) of all of this variables.</p>
 </div>
-<div id="file-formats-for-importing-and-exporting." class="section level1">
-<h1>File formats for importing and exporting.</h1>
-<p>When importing files the functions <code>blue()</code> and <code>open_blue()</code> rely on the function <code>import</code> from the package <code>rio</code>. This package recognises the most frequently used file formats based on their corresponding suffix. This applies to loading blueprint files as well as data file specified in this data files. The most frequent formats are listed in Table 6. For a full list of file formats that can be loaded with blueprint, have a look at [LINK RIO].</p>
+<div id="file-formats-for-data-importexport-and-blueprint-files" class="section level1">
+<h1>File formats for data import/export and blueprint files</h1>
+<p>When importing files the functions <code>blue()</code> and <code>open_blue()</code> rely on the function <code>import</code> from the package <code>rio</code>. This package recognises the most frequently used file formats based on their corresponding suffix. This applies to the file format of blueprint files as well as data file. The most frequent formats are listed in Table 6. For a full list of file formats that can be loaded with blueprint, have a look at [LINK RIO].</p>
 <table>
 <caption>Table 6: Common file formats used with blueprint.</caption>
 <thead>
@@ -466,8 +466,8 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 <h1>Exporting files</h1>
 <p>By giving the argument /export.file/, e.g. blue(…, export.file=‘/path/to/file.csv’) the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.</p>
 </div>
-<div id="aggregating-data" class="section level1">
-<h1>Aggregating data</h1>
+<div id="aggregation-of-data" class="section level1">
+<h1>Aggregation of data</h1>
 <p>Will follow.</p>
 </div>
 
