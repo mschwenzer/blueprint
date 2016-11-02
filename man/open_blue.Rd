@@ -4,7 +4,7 @@
 \alias{open_blue}
 \title{open_blue creates or loads blueprint-file .}
 \usage{
-open_blue(blueprint, waves = 1)
+open_blue(blueprint = options("blueprint_file"), waves = 1)
 }
 \arguments{
 \item{blueprint}{Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link[=rio]{import}}. See the vignette for details of the structure.}

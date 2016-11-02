@@ -458,7 +458,7 @@ blueprint.wave.validator <- function(blueprint)
 ##' @importFrom rio export
 ##' @importFrom dplyr %>%
 blue <- function(
-                 blueprint='a.blueprint',
+                 blueprint=options('blueprint_file'),
                  fun=TRUE,                 
                  export.file=NULL,
                  waves=NULL,
@@ -652,7 +652,7 @@ source(codefile,local=TRUE)
 ##' @importFrom utils browseURL
 ##' @importFrom dplyr %>%
 open_blue <- function(
-                          blueprint,
+                          blueprint=options('blueprint_file'),
                           waves=1
                           )
 {
@@ -680,10 +680,10 @@ v\n'
 ## ess-r-package-info: ("blueprint" . "/doc/wissenschaft/blueprint")
 ## End:
 
-##' .. content for \description{} (no empty lines) ..
+##' \code{blue_example}
 ##'
-##' .. content for \details{} ..
-##' @title Creates a folder with example files
+##' Create example dat
+##' @title blue_example Creates a folder with example files
 ##'
 ##' This folder will be named 'blueprint_example' and contains the example files 'INT_STU12_DEC03_synth.sav','INT_SCQ12_DEC03_synth.sav','example_blueprint1.xlsx','example_blueprint1.csv','example_blueprint2.xlsx','example_blueprint2.csv'.
 ##' @return NULL

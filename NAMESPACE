@@ -3,6 +3,8 @@
 export(attrs.as.factor)
 export(blue)
 export(blue_example)
+export(blue_info)
+export(blue_set)
 export(open_blue)
 importFrom(Hmisc,describe.vector)
 importFrom(dplyr,"%>%")

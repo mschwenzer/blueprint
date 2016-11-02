@@ -2,17 +2,17 @@
 % Please edit documentation in R/blue.R
 \name{blue_example}
 \alias{blue_example}
-\title{Creates a folder with example files
+\title{blue_example Creates a folder with example files
 
 This folder will be named 'blueprint_example' and contains the example files 'INT_STU12_DEC03_synth.sav','INT_SCQ12_DEC03_synth.sav','example_blueprint1.xlsx','example_blueprint1.csv','example_blueprint2.xlsx','example_blueprint2.csv'.}
 \usage{
 blue_example()
 }
 \description{
-.. content for \description{} (no empty lines) ..
+\code{blue_example}
 }
 \details{
-.. content for \details{} ..
+Create example dat
 }
 \author{
 Marc Schwenzer
