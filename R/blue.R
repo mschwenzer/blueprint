@@ -510,7 +510,8 @@ blue <- function(
                                         # Actually get data to blueprints
     if(data.table){blueprint.code.log('suppressMessages(require(data.table,quietly = TRUE))')}
     blueprint.code.log('require(dplyr)')
-    blueprint.code.log(return.diff.code())
+    blueprint.code.log('data.frame() -> final.df')    
+    blueprint.code.log(return.diff.code)
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
     blueprints %>% dplyr::do(dfs={
         blueprint <- .$blueprints
