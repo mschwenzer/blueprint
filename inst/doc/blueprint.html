@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2016-11-02" />
+<meta name="date" content="2016-11-04" />
 
 <title>Introduction to blueprint</title>
 
@@ -116,7 +116,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Introduction to blueprint</h1>
-<h4 class="date"><em>2016-11-02</em></h4>
+<h4 class="date"><em>2016-11-04</em></h4>
 
 </div>
 
@@ -266,7 +266,7 @@ example1</code></pre>
  9   00393     GBR      2 15.50       9.1159    612.4864     1
  10  04696     DEU      1 15.92       4.1366    576.1100     1
  # ... with 1,990 more rows</code></pre>
-<p>Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do represent waves (which are merged as additional rows).</p>
+<p>Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do e.g. represent chunks (which are merged as additional rows).</p>
 </div>
 <div id="example-2-adding-variables-from-another-file-left-joining" class="section level2">
 <h2>Example 2: Adding variables from another file (Left-joining)</h2>
@@ -379,20 +379,20 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 </div>
 <div id="merging-different-waves" class="section level1">
 <h1>Merging different waves</h1>
-<p>Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,…) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the waves argument using:</p>
-<pre><code>open.blue('my.blueprint.name2.xlsx,waves=1:2)</code></pre>
+<p>Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,…) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the chunks argument using:</p>
+<pre><code>open.blue('my.blueprint.name2.xls)</code></pre>
 <p>Figure XXX shows a more advandced blueprint file reflecting this structure.</p>
-<p>Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.</p>
+<p>Entering the appropriate data will rename, transform and join the data automatically. In short: Chunks are specified /columnwise/ (with blocks of 4 columns (called “chunks”) for each data source (chunk) containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same chunk are specified /rowwise/ by giving different names and setting the link condition.</p>
 </div>
 <div id="transformation-of-variables" class="section level1">
 <h1>Transformation of variables</h1>
-<p>By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let’s say we want to recode gender from /0/ to ‘/Male/’ and from /1/ to ‘/Female/’. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values ‘/Male/’ and ‘/Female/’. Note that a fun entry can be used to execute a whole chain of transformations (seperated by ‘%&gt;%’). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%&gt;%/. Also note that e.g. recoding different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.</p>
+<p>By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let’s say we want to recode gender from /0/ to ‘/Male/’ and from /1/ to ‘/Female/’. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values ‘/Male/’ and ‘/Female/’. Note that a fun entry can be used to execute a whole chain of transformations (seperated by ‘%&gt;%’). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%&gt;%/. Also note that e.g. recoding different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows. If you want to temporarily deactivate the execution of transformtions use the argument <code>blue(... , fun=FALSE)</code>.</p>
 </div>
 <div id="extended-logging" class="section level1">
-<h1>Extended logging</h1>
+<h1>’Extended logging</h1>
 <p>Blueprint by default creates a corresponding .R code file containing all operations necessary to merge the data, by default written to /filepath_without_extension.blueprint.code.R/. If you choose to do so you can use, edit and share this standalone file without the need to have the blueprint package installed. # Logging and descriptives of the merging / transfomation process</p>
 <p>Blueprint is constructed to not be very verbose when called. Nonetheless it has a logging feature that can be activated by setting /blue(…,logfile=TRUE)/. In this case a extended logfile is created that contains also information on the transformation process (recode table, descriptives, distribution and information about automatic type conversions, statistics on dimension of the data). The parameter /logfile/ is set to /FALSE/ by default, only standard information will be written to this file. If you set logfile to a character string (by e.g. /blue(…,logfile=‘a.file.txt’)/), an extended logfile will be written to this path. If you don’t specify a path, the name will be resembled by the name of the blueprint file The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.</p>
-<pre><code>----Transformation. Variable `ST03Q01`  (wave 1): recode(`2`=0L,`1`=1L,.default=NA_integer_)  ----------------------------- 
+<pre><code>----Transformation. Variable `ST03Q01`  (chunk 1): recode(`2`=0L,`1`=1L,.default=NA_integer_)  ----------------------------- 
   
   ============================== 
   old    1      2     7   8   9 
@@ -411,7 +411,7 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 </div>
 <div id="assigning-fixed-value" class="section level1">
 <h1>Assigning fixed value</h1>
-<p>It might be convenient to create new variables that are constant for every unit of the same wave. This can be done by entering names for var1 , var2,… that are not in the original data file. To assign fixed value to a new variable you either use the integer specification or encapsulating characters into apostrophe (‘) . Note that since Excel has a special treatment of captioning characters using two beginning Apostrophes and one ending apostrophe probably will have to be used (’‘character value’) . |————-+————-+———-+——-| | newvar | var1 | file1 | link1 | |————-+————-+———-+——-| | i.id | idno | i.w1.dta | | | survey.year | 2000L | i.w1.dta | | | wavec | ‘PISA2000’ | i.w1.dta | | |————-+————-+———-+——-| Note the difference between e.g. /i.id/ stemming from a column in the file i.w1.dta and /survey.year/ which will be the same (“PISA2000”) for all units in file i.w1.dta.</p>
+<p>It might be convenient to create new variables that are constant for every unit of the same chunk. This can be done by entering names for var1 , var2,… that are not in the original data file. To assign fixed value to a new variable you either use the integer specification or encapsulating characters into apostrophe (‘) . Note that since Excel has a special treatment of captioning characters using two beginning Apostrophes and one ending apostrophe probably will have to be used (’‘character value’) . |————-+————-+———-+——-| | newvar | var1 | file1 | link1 | |————-+————-+———-+——-| | i.id | idno | i.w1.dta | | | survey.year | 2000L | i.w1.dta | | | wavec | ‘PISA2000’ | i.w1.dta | | |————-+————-+———-+——-| Note the difference between e.g. /i.id/ stemming from a column in the file i.w1.dta and /survey.year/ which will be the same (“PISA2000”) for all units in file i.w1.dta.</p>
 </div>
 <div id="selection-of-multiple-variables" class="section level1">
 <h1>Selection of multiple variables</h1>
@@ -464,7 +464,12 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 </div>
 <div id="exporting-files" class="section level1">
 <h1>Exporting files</h1>
-<p>By giving the argument /export.file/, e.g. blue(…, export.file=‘/path/to/file.csv’) the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.</p>
+<p>By giving the argument /export_file/, e.g. blue(…, export_file=‘/path/to/file.csv’) the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.</p>
+</div>
+<div id="convenience-functions" class="section level1">
+<h1>Convenience functions</h1>
+<p>Reseach often involves building a data.frame that is expanded and refined as the research questions become more complicated. This means that you likely will rely one one or few blueprint files that you build up to more complex specifications from the scratch. ## Settin a default blueprint file: set_blue() It might be convenient define a blueprint file that is used as default. Most functions of blueprint that expect a path to a blueprint file look if a default option is set. This option can easily be set with the convenience function set_blue:</p>
+<pre><code>set_blue('/path/to/blueprint.file.xlsx')</code></pre>
 </div>
 <div id="aggregation-of-data" class="section level1">
 <h1>Aggregation of data</h1>

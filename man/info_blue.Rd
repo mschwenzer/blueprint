@@ -4,15 +4,15 @@
 \alias{info_blue}
 \title{info_blue}
 \usage{
-info_blue(blueprint = options()$blueprint_file, waves, searchstr = NULL,
+info_blue(blueprint = options()$blueprint_file, chunks, searchstr = NULL,
   which = NULL)
 }
 \arguments{
 \item{blueprint}{The Blueprint file.}
 
-\item{waves}{The wave to inform about. If length(waves)>1 the search will be vectorized over all waves. Only if length(waves)=1 the data is actually returned}
+\item{chunks}{Numeric vector specifying the chunk(s) to inform about like shown in a blueprint file. If length(chunks)>1 the search will be vectorized over all chunks. Only if length(chunks)=1 the data is actually returned.}
 
-\item{search}{An optional pattern to search for in the labels.}
+\item{search}{An optional pattern to search for in the attribute labels of data.frame. Can be used to search through variable description if this attributes exist (they are by default imported when e.g. using Stata or SPSS file.}
 }
 \value{
 Returns the according file invisible. If you assign it or pipe it, it can be reused.

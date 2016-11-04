@@ -259,27 +259,31 @@ set.empty.values.to.NA <- function(blueprint)
     blueprint %>% mutate_all(.funs=funs(ifelse(.=='',NA,.)))
 }
 
-##' Return a list of a blueprint and meta.statements indicated by ^@
-##'
-##' .. content for \details{} ..
-##' @title 
-##' @param blueprint 
-##' @param varname.or.position 
-##' @return 
-##' @author Marc Schwenzer
+# Extract meta statements from blueprint
+# Return a list of a blueprint and meta.statements indicated by ^@
 extract.blueprint.meta.statements <- function(blueprint,varname.or.position)
 {
-    blueprint[,varname.or.position] %>% str_detect('^@')  %>% which  -> rows.with.global.meta.statements
-    blueprint[rows.with.global.meta.statements,varname] -> meta.statements
+    blueprint[,varname.or.position] %>% str_detect('^!')  %>% which  -> rows.with.meta.statements
+    blueprint[rows.with.meta.statements,varname.or.position] -> meta.statements
     # Remove @ specifyer
-    meta.statements %>% str_replace('^@','')
+    meta.statements %>% str_replace('^!','') -> meta.statements
     
                                         # add left join if blue statement is found evaluated
-    meta.statements %>% str_detect('blue *\\(')   -> blue.meta.statements
-meta.statements[blue.meta.statements] <- paste0('left_join(final.df,',meta.statements[blue.meta.statements],') -> final.df')
-    meta.statements[!blue.meta.statements] <- paste0('final.df  %>% ',meta.statements[blue.meta.statements],' -> final.df')
-blueprint[-rows.with.global.meta.statements,] -> blueprint
-return(list(blueprint,meta.statements))
+    names(blueprint)  %>% str_detect('link')  %>% which %>% .[1] -> linkcol
+
+    blueprint[rows.with.meta.statements,linkcol] %>% str_detect('=')  -> link.condition.exists.vector
+    # fix NAs when link column is empty
+FALSE -> link.condition.exists.vector[link.condition.exists.vector %>% is.na]
+                                        # TODO: validate link condition
+    sapply(1:length(link.condition.exists.vector),function(x)
+        {
+            ifelse(link.condition.exists.vector[x],
+                   paste0('final.df  %>% left_join(',meta.statements[x],',by=c(',blueprint[rows.with.meta.statements[x],linkcol] %>% process.links,')) -> final.df\n\n'),
+                   paste0('final.df  %>% ',meta.statements[x],' -> final.df\n\n')
+                   )
+        }) -> meta.statements
+blueprint[-rows.with.meta.statements,] -> blueprint
+return(list(blueprint=blueprint,meta.statements=meta.statements))
     }
     
 
@@ -507,7 +511,10 @@ blue <- function(
         {
         extended=FALSE            
         }
-        str_replace(blueprint,'\\.....+$','.blueprint.log.txt') -> logfile
+
+
+                               str_replace(blueprint,'\\.....+$',) -> logfile
+                               rm(logspecifier)
     }
     logfile %>% normalised.path.and.dir.exists -> logfile
     if(logfile==blueprint)
@@ -519,13 +526,16 @@ blue <- function(
     blueprint.log(Sys.time())
     blueprint.log(start.message)
     str_replace(blueprint,'\\.....+$','.blueprint.code.R') -> codefile
+
                                         # !!! check for path consistency
     if(file.exists(codefile)){unlink(codefile)}
     
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
     ## Import and validate blueprint -----------------------------------------------------------
-    code.time <- Sys.time()    
-    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,chunks=chunks) -> blueprints
+    code.time <- Sys.time()
+    rio::import(file=blueprint,...) %>% extract.blueprint.meta.statements(1)  -> blueprints
+    blueprints$meta.statements -> global.meta.statements
+    blueprints$blueprint %>%  validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,chunks=chunks) -> blueprints
 
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'chunk' and 'blueprints'
@@ -636,6 +646,9 @@ blue <- function(
 
     
     blueprint.code.log('final.df %>% tbl_df -> final.df')
+                                        # execute meta.statemets indicated by @ as previous extracted by extract.blueprint.meta.statements
+    blueprint.code.log(paste0('\n',global.meta.statements,collapse=''))
+
 #    cat(paste0('\nTime taken to produce code.file: ',format(round(Sys.time()- code.time,2),unit='sec'),'\n\n'))
     cat(paste0('\n- Starting iterations of import',ifelse(fun,', transformation',''),ifelse(extended,',',' and'),' merge',ifelse(extended,' and compution of extended stats',''),' ...'))
     eval.time <- Sys.time()
@@ -703,10 +716,7 @@ open_blue <- function(
 ## ess-r-package-info: ("blueprint" . "/doc/wissenschaft/rpackages/blueprint/")
 ## End:
 
-##' \code{blue_example}
-##'
-##' Create example dat
-##' @title blue_example Creates a folder with example files
+##' blue_example Creates a folder with example files
 ##'
 ##' This folder will be named 'blueprint_example' and contains the example files 'INT_STU12_DEC03_synth.sav','INT_SCQ12_DEC03_synth.sav','example_blueprint1.xlsx','example_blueprint1.csv','example_blueprint2.xlsx','example_blueprint2.csv'.
 ##' @return NULL

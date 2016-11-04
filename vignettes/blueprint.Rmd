@@ -97,7 +97,7 @@ example1
  # ... with 1,990 more rows
 ```
 
-Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do e.g. represent waves (which are merged as additional rows).
+Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do e.g. represent chunks (which are merged as additional rows).
 
 ## Example 2: Adding variables from another file (Left-joining)
 In this example we want to add school characteristics to the data of students. The file `blueprint_example/INT_SCQ12_DEC03_synth.sav` contains this variables. 
@@ -165,7 +165,7 @@ open.blue('my.blueprint.name2.xls)
 ```
 Figure XXX shows a more advandced blueprint file reflecting this structure. 
 
-Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns (called "chunks") for each data source (wave) containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same chunk are specified /rowwise/ by giving different names and setting the link condition.
+Entering the appropriate data will rename, transform and join the data automatically. In short: Chunks are specified /columnwise/ (with blocks of 4 columns (called "chunks") for each data source (chunk) containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same chunk are specified /rowwise/ by giving different names and setting the link condition.
 
 # Transformation of variables
 By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let's say we want to recode gender from /0/ to '/Male/' and from /1/ to '/Female/'. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values '/Male/' and '/Female/'. Note that a fun entry can be used to execute a whole chain of transformations (seperated by '%>%'). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%>%/. Also note that e.g. recoding  different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.
@@ -179,7 +179,7 @@ the data, by default written to /filepath_without_extension.blueprint.code.R/. I
 Blueprint is constructed to not be very verbose when called. Nonetheless it has a logging feature that can be activated by setting /blue(...,logfile=TRUE)/. In this case a extended logfile is created that contains also information on the transformation process (recode table, descriptives, distribution and information about automatic type conversions, statistics on dimension of the data). The parameter /logfile/ is set to /FALSE/ by default, only standard information will be written to this file. If you set logfile to a character string (by e.g. /blue(...,logfile='a.file.txt')/), an extended logfile will be written to this path. If you don't specify a path, the name will be resembled by the name of the blueprint file The computation of the statistics take some time and therefore there is a tradeoff between time and the comfort of additional information.  
 
 ```
-----Transformation. Variable `ST03Q01`  (wave 1): recode(`2`=0L,`1`=1L,.default=NA_integer_)  ----------------------------- 
+----Transformation. Variable `ST03Q01`  (chunk 1): recode(`2`=0L,`1`=1L,.default=NA_integer_)  ----------------------------- 
   
   ============================== 
   old    1      2     7   8   9 
@@ -198,7 +198,7 @@ Blueprint is constructed to not be very verbose when called. Nonetheless it has 
 ```
 
 # Assigning fixed value
-It might be convenient to create new variables that are constant for every unit of the same wave. This can be done by entering names  for var1 , var2,... that are not in the original data file. To assign fixed value to a new variable you either use the integer specification or encapsulating characters into apostrophe (') . Note that since Excel has a special treatment of captioning characters using two beginning Apostrophes and one ending apostrophe probably will have to be used  (''character value') .
+It might be convenient to create new variables that are constant for every unit of the same chunk. This can be done by entering names  for var1 , var2,... that are not in the original data file. To assign fixed value to a new variable you either use the integer specification or encapsulating characters into apostrophe (') . Note that since Excel has a special treatment of captioning characters using two beginning Apostrophes and one ending apostrophe probably will have to be used  (''character value') .
 |-------------+-------------+----------+-------|
 | newvar      | var1        | file1    | link1 |
 |-------------+-------------+----------+-------|
@@ -251,4 +251,9 @@ set_blue('/path/to/blueprint.file.xlsx')
 
 
 # Aggregation of data
-Will follow.
+Entries in the newvar column that start with a ! are extracted. They are executed /after/ the whole data.frame is merged. They can be used to easily select subsets or aggregated versions of the data. In general ! <...ANYFUNCTION...> will be evaluated as:
+```
+final.df  %>% ...ANY FUNCTION... -> final.df
+```
+There is one exception that allows for easily combining blueprints: If a !-statement is followed by an entry in the link column. It is treated as a left_join  e.g. blue('/path.to/blue.printfile.xlsx') it will be left_joined (meaning that this 
+
