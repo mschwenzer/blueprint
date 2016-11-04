@@ -55,16 +55,16 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
                                         # end column 
                    endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                                         # + the last column containing everything
-                            length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
+                            length(names(blueprint)))) %>% transmute(chunk=1:nrow(.),startcol,endcol)  -> blueprints.column.info
                                         # Subset over the chunks
         if(is.numeric(chunks)){
-            blueprints.column.info %>% filter(.$wave%in%c(chunks)) ->         blueprints.column.info
+            blueprints.column.info %>% filter(.$chunk%in%c(chunks)) ->         blueprints.column.info
         }
-        cat('- Validating blueprint for wave')
-        blueprints.column.info %>% group_by(wave)   %>%
+        cat('- Validating blueprint for chunk')
+        blueprints.column.info %>% group_by(chunk)   %>%
                                         # -> reduced to a single-line data.frame containing the selected chunks and the rows
             do(blueprints={
-                cat(paste0('...',.$wave))
+                cat(paste0('...',.$chunk))
             chunk.columns <- c(1,(.$startcol):(.$endcol))
             blueprint[,chunk.columns]  %>% 
                 ## normalise to a data.frame with these variables / remove columns not named correct
@@ -73,7 +73,7 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
                 add.variables.specified.by.brackets %>%
                 set.empty.values.to.NA  %>%
                 ## Validate all blueprints before something is done actually.... 
-                blueprint.wave.validator})
+                blueprint.chunk.validator})
     }
 
 
@@ -96,12 +96,12 @@ blueprint.log.formatter <- function(record) {
 text <- paste(paste0(record$msg, sep=' '))
 }
 
-blueprint.variable.diff <- function(variable,funs,name='',wave='')
+blueprint.variable.diff <- function(variable,funs,name='',chunk='')
 {
     blueprint.log('')
     blueprint.log(Sys.time())
     blueprint.log('')
-blueprint.log        (paste0('----Transformation of variable `',name,'`  (chunk ',wave,'): ',funs,'  -----------------------------\n'))
+blueprint.log        (paste0('----Transformation of variable `',name,'`  (chunk ',chunk,'): ',funs,'  -----------------------------\n'))
     variable %>% duplicated %>% `!`  %>% which  -> old.pos
     variable[old.pos] -> kept.levels.of.variable
     class(variable) -> old.type
@@ -170,7 +170,7 @@ normalised.path.and.dir.exists <- function(filepath)
 ##' @importFrom rio import
 ##' @importFrom dplyr transmute
 ##' @importFrom dplyr %>%
-load.and.recode <- function(blueprint,fun=FALSE,wave=1,extended=FALSE)
+load.and.recode <- function(blueprint,fun=FALSE,chunk=1,extended=FALSE)
 {
                                         # find non-empty fun (rec) columns  / !!! replace by stringr::str_match / find out why it can be string "NA" which is a bug
     if(fun)
@@ -178,7 +178,7 @@ load.and.recode <- function(blueprint,fun=FALSE,wave=1,extended=FALSE)
         ((blueprint$fun!='NA')&(!is.na(blueprint$fun))&(!is.nan(blueprint$fun)))  %>% which -> rep.pos
         if(extended){
                                         # if logging, execute the transformation in blueprint.variable.diff 
-            paste0(blueprint$var[rep.pos],' %>% blueprint.variable.diff(fun="',blueprint$fun[rep.pos],'",name="',blueprint$var[rep.pos],'",wave="',wave,'")') -> blueprint$var[rep.pos]
+            paste0(blueprint$var[rep.pos],' %>% blueprint.variable.diff(fun="',blueprint$fun[rep.pos],'",name="',blueprint$var[rep.pos],'",chunk="',chunk,'")') -> blueprint$var[rep.pos]
         }
         else{
                                         # else direct
@@ -221,12 +221,12 @@ process.links <- function(links)        {
 ##' @importFrom Hmisc describe.vector
 ##' @importFrom utils capture.output
 ##' @importFrom dplyr %>%
-blueprint.variable.diff <- function(variable,funs,name='',wave='')
+blueprint.variable.diff <- function(variable,funs,name='',chunk='')
 {
     blueprint.log('')
     blueprint.log(Sys.time())
     blueprint.log('')
-    blueprint.log        (paste0('----Transformation of variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
+    blueprint.log        (paste0('----Transformation of variable `',name,'`  (chunk ',chunk,'): ',funs,'  -----------------------------\n'))
     variable %>% duplicated %>% `!`  %>% which  -> old.pos
     variable[old.pos] -> kept.levels.of.variable
     class(variable) -> old.type
@@ -449,9 +449,9 @@ blueprint.check.for.duplicate.variable.names <- function(blueprint)
 }
 
 
-## blueprint.wave.validator -----------------------------------------------------------
+## blueprint.chunk.validator -----------------------------------------------------------
 ##' @importFrom dplyr %>%
-blueprint.wave.validator <- function(blueprint)
+blueprint.chunk.validator <- function(blueprint)
 {
     blueprint %>%
         blueprint.check.for.duplicate.variable.names %>%
@@ -468,7 +468,7 @@ blueprint.wave.validator <- function(blueprint)
 ##' @param blueprint A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link[=rio]{import}} function. See the vignette for details of the structure of a blueprint.
 ##' @param fun Logical vector wheter the functions from \code{fun} should be applied on the specified variables.
 ##' @param export_file Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.
-##' @param chunks A numeric vector specifying the chunks that shall be included from the blueprint file. If NULL every wave will be merged.
+##' @param chunks A numeric vector specifying the chunks that shall be included from the blueprint file. If NULL every chunk will be merged.
 ##' @param logfile Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.
 ##' @param data.table Wheter to use the data.table package for merge process. (Minimal faster)
 ##' @param ... Optionally commands are passed to \code{\link[=rio]{import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
@@ -528,7 +528,7 @@ blue <- function(
     rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,chunks=chunks) -> blueprints
 
     rm(blueprint)    
-                                        # blueprints: a data.frame with columns 'wave' and 'blueprints'
+                                        # blueprints: a data.frame with columns 'chunk' and 'blueprints'
     ## Convert blueprints to code -----------------------------------------------------------
                                         # validator for this kind of data.frame
                                         # Actually get data to blueprints
@@ -539,8 +539,8 @@ blue <- function(
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
     blueprints %>% dplyr::do(dfs={
         blueprint <- .$blueprints
-        wave <- .$wave
-        blueprint.code.log(paste0('### wave ',wave))
+        chunk <- .$chunk
+        blueprint.code.log(paste0('### chunk ',chunk))
         blueprint.code.log('\nprint(p$tick()$print())\n')
         
         blueprint$newvar -> all.vars
@@ -548,8 +548,8 @@ blue <- function(
                                         #        cat('blueprint$newvar:\n',blueprint$newvar)        
                                         #        cat('blueprint$var:\n',blueprint$var)
          ###
-        blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing wave:',wave,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
-                                        # get different unique filenames to process for each wave
+        blueprint.log(paste('\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n>>> Processing chunk:',chunk,'\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n'))
+                                        # get different unique filenames to process for each chunk
         blueprint.files <- unique(blueprint$file)
                                         # main file has to be the first specified file
         blueprint.main.file <- blueprint.files[1]
@@ -560,7 +560,7 @@ blue <- function(
         blueprint$file %>% str_detect(blueprint.main.file)  -> pos.main.file
         (pos.main.file & (pos.main.file %>% is.na %>% `!`)) -> pos.main.file
         blueprint[pos.main.file,] %>%
-            load.and.recode(fun=fun,wave=wave,extended=extended) -> code.to.execute
+            load.and.recode(fun=fun,chunk=chunk,extended=extended) -> code.to.execute
         paste0(code.to.execute,'  -> main.data') -> code.to.execute
         blueprint$newvar %>% na.omit    -> main.data.var
         blueprint.code.log(code.to.execute)
@@ -602,7 +602,7 @@ blue <- function(
                                   rbind(add.blueprint,data.frame(newvar=vars.to.add,var=vars.to.add,file=rep_len(NA,length(vars.to.add)),link=rep_len(NA,length(vars.to.add)),fun=rep_len(NA,length(vars.to.add)))) -> add.blueprint
 
 #### merge the data
-                                  add.blueprint %>% load.and.recode(fun=fun,wave=wave,extended=extended)  -> code.to.execute
+                                  add.blueprint %>% load.and.recode(fun=fun,chunk=chunk,extended=extended)  -> code.to.execute
                                   paste0(code.to.execute,' -> data.add') -> code.to.execute
                                   blueprint.code.log(code.to.execute)
                                   paste0('\n\ndplyr::left_join(main.data,data.add,by=c(',link.condition[1],'))  -> main.data\n\nrm(data.add)\n\n') -> code.to.execute
@@ -611,23 +611,23 @@ blue <- function(
                                         #eval(parse(text=code.to.execute))
                                   }
                           }
-        paste0('data.wave',wave) -> df.wave.name
+        paste0('data.chunk',chunk) -> df.chunk.name
         return.code.to.return.df.with.certain.vars_(all.vars,missing.var.pos) -> select.code
-                                        #        paste0('main.data  %>% ',select.code,' %>% mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
-                paste0('main.data  %>%  mutate(wave=',wave,')  -> ',df.wave.name) -> code.to.execute
+                                        #        paste0('main.data  %>% ',select.code,' %>% mutate(chunk=',chunk,')  -> ',df.chunk.name) -> code.to.execute
+                paste0('main.data  %>%  mutate(chunk=',chunk,')  -> ',df.chunk.name) -> code.to.execute
         # eval(parse(text=code.to.execute))
         blueprint.code.log(code.to.execute)
-        if(wave==1)
+        if(chunk==1)
         {
-            paste0(df.wave.name,' -> final.df') -> code.to.execute
+            paste0(df.chunk.name,' -> final.df') -> code.to.execute
             }
             else
             {
-                c('final.df',df.wave.name) %>% make.bind.code(data.table=TRUE)  -> code.to.execute
+                c('final.df',df.chunk.name) %>% make.bind.code(data.table=TRUE)  -> code.to.execute
             }
-        code.to.execute %>% paste0(.,'\nrm(',df.wave.name,')') -> code.to.execute
+        code.to.execute %>% paste0(.,'\nrm(',df.chunk.name,')') -> code.to.execute
         blueprint.code.log(code.to.execute)
-        return(df.wave.name)
+        return(df.chunk.name)
     }) -> blueprints.data
 
     blueprints.data$dfs  %>% unlist  -> dfs
