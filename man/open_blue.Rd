@@ -4,12 +4,12 @@
 \alias{open_blue}
 \title{open_blue creates or loads blueprint-file .}
 \usage{
-open_blue(blueprint = options("blueprint_file"), waves = 1)
+open_blue(blueprint = options()$blueprint_file, chunks = 20)
 }
 \arguments{
 \item{blueprint}{Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link[=rio]{import}}. See the vignette for details of the structure.}
 
-\item{waves}{Number specifying how many waves shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.}
+\item{chunks}{Number specifying how many chunks shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.}
 }
 \value{
 Returns nothing. It is just used for the side effect of generating or opening the specified blueprint file.

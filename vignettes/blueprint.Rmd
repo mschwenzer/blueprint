@@ -97,7 +97,7 @@ example1
  # ... with 1,990 more rows
 ```
 
-Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do represent waves (which are merged as additional rows).
+Note again that the structure of blueprint files might be confusing when using the first time. For ease of editing it is transposed compared to the resulting data.frame: Rows in blueprints do represent columns (variables) in the data and as will be seen: column blocks in blueprints do e.g. represent waves (which are merged as additional rows).
 
 ## Example 2: Adding variables from another file (Left-joining)
 In this example we want to add school characteristics to the data of students. The file `blueprint_example/INT_SCQ12_DEC03_synth.sav` contains this variables. 
@@ -159,18 +159,19 @@ my.df <- blue('my.blueprint.name.csv')
 
 
 # Merging different waves
-Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,...) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the waves argument using:
+Repeated surveys typically are delivered as so-called waves. Blueprint makes it easy to merge different waves into a long format. Independent of whether the same units are measured repeatedly or the same variables are measured repeatedly for different units, the purpose will be to combine data /rowwise/. Data providers (like e.g. OECD PISA) sometimes emit wave-files with changed variable names for the same items. Harmonizing this variable is very easy with using blueprint. The /newvar/ column contains the variable names. Additional variable columns starting with var (e.g. /var1/, /var2/,...) contain the variable names from the files specific to the wave. We can join two waves by entering additional columns containing the identifier var,file,link,fun. Or we can initialize a new blueprint with the chunks argument using:
 ```
-open.blue('my.blueprint.name2.xlsx,waves=1:2)
+open.blue('my.blueprint.name2.xls)
 ```
 Figure XXX shows a more advandced blueprint file reflecting this structure. 
 
-Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns for each wave containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same wave are specified /rowwise/ by giving different names and setting the link condition.
+Entering the appropriate data will rename, transform and join the data automatically. In short: Waves are specified /columnwise/ (with blocks of 4 columns (called "chunks") for each data source (wave) containing the original variable name, filepath, link conditions, and transformation functions). Columns that relate to units in the same chunk are specified /rowwise/ by giving different names and setting the link condition.
 
 # Transformation of variables
 By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let's say we want to recode gender from /0/ to '/Male/' and from /1/ to '/Female/'. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values '/Male/' and '/Female/'. Note that a fun entry can be used to execute a whole chain of transformations (seperated by '%>%'). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%>%/. Also note that e.g. recoding  different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.
+If you want to temporarily deactivate the execution of transformtions use the argument `blue(... , fun=FALSE)`.
 
-# Extended logging
+# 'Extended logging
 Blueprint by default creates a corresponding .R code file containing all operations necessary to merge 
 the data, by default written to /filepath_without_extension.blueprint.code.R/. If you choose to do so you can use, edit and share this standalone file without the need to have the blueprint package installed. 
 # Logging and descriptives of the merging / transfomation process
@@ -233,6 +234,21 @@ blue('/path/to/blueprint.file.xlx',which='MyData')
 
 # Exporting files
 By giving the argument /export_file/, e.g. blue(..., export_file='/path/to/file.csv') the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.
+
+
+
+
+# Convenience functions
+Reseach often involves building a data.frame that is expanded and refined as the research questions become more complicated. This means that you likely will rely one one or few blueprint files that you build up to more complex specifications from the scratch.
+## Settin a default blueprint file: set_blue()
+It might be convenient define a blueprint file that is used as default. Most functions of blueprint that expect a path to a blueprint file look if a default option is set. This option can easily be set with the convenience function set_blue:
+```
+set_blue('/path/to/blueprint.file.xlsx')
+```
+
+
+
+
 
 # Aggregation of data
 Will follow.

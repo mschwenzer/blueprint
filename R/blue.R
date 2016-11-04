@@ -39,7 +39,7 @@ stop.if.no.var.column <- function(df)
 ##' @importFrom dplyr group_by
 ##' @importFrom dplyr do
 ##' @importFrom dplyr %>%
-validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,waves)
+validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprint,chunks)
     {
         blueprint %>%
             blueprint.remove.column.rows    %>%
@@ -47,19 +47,19 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
             df.set.standard.names %>%
             df.remove.non.standard.named.columns %>%
             stop.if.no.var.column -> blueprint
-                                        # cut blueprint into waves
+                                        # cut blueprint into chunks
         data.frame(startcol=(names(blueprint)=='var') %>% which,
                                         # end column 
                    endcol=c((names(blueprint) =='var')  %>% which %>% .[-1] %>% `-`(1),
                                         # + the last column containing everything
                             length(names(blueprint)))) %>% transmute(wave=1:nrow(.),startcol,endcol)  -> blueprints.column.info
-                                        # Subset over the waves
-        if(is.numeric(waves)){
-            blueprints.column.info %>% filter(.$wave%in%c(waves)) ->         blueprints.column.info
+                                        # Subset over the chunks
+        if(is.numeric(chunks)){
+            blueprints.column.info %>% filter(.$wave%in%c(chunks)) ->         blueprints.column.info
         }
         cat('- Validating blueprint for wave')
         blueprints.column.info %>% group_by(wave)   %>%
-                                        # -> reduced to a single-line data.frame containing the selected waves and the rows
+                                        # -> reduced to a single-line data.frame containing the selected chunks and the rows
             do(blueprints={
                 cat(paste0('...',.$wave))
             chunk.columns <- c(1,(.$startcol):(.$endcol))
@@ -98,7 +98,7 @@ blueprint.variable.diff <- function(variable,funs,name='',wave='')
     blueprint.log('')
     blueprint.log(Sys.time())
     blueprint.log('')
-blueprint.log        (paste0('----Transformation of variable `',name,'`  (wave ',wave,'): ',funs,'  -----------------------------\n'))
+blueprint.log        (paste0('----Transformation of variable `',name,'`  (chunk ',wave,'): ',funs,'  -----------------------------\n'))
     variable %>% duplicated %>% `!`  %>% which  -> old.pos
     variable[old.pos] -> kept.levels.of.variable
     class(variable) -> old.type
@@ -443,7 +443,7 @@ blueprint.wave.validator <- function(blueprint)
 ##' @param blueprint A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link[=rio]{import}} function. See the vignette for details of the structure of a blueprint.
 ##' @param fun Logical vector wheter the functions from \code{fun} should be applied on the specified variables.
 ##' @param export_file Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.
-##' @param waves A numeric vector specifying the waves that shall be included from the blueprint file. If NULL every wave will be merged.
+##' @param chunks A numeric vector specifying the chunks that shall be included from the blueprint file. If NULL every wave will be merged.
 ##' @param logfile Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.
 ##' @param data.table Wheter to use the data.table package for merge process. (Minimal faster)
 ##' @param ... Optionally commands are passed to \code{\link[=rio]{import}}. Especially select the sheet of an Excel (.xlsx) files by the argument \code{which}.
@@ -461,7 +461,7 @@ blue <- function(
                  blueprint=options()$'blueprint_file',
                  fun=TRUE,                 
                  export_file=NULL,
-                 waves=NULL,
+                 chunks=NULL,
                  logfile=FALSE,                      
                  data.table=TRUE,
                  ...
@@ -500,7 +500,7 @@ blue <- function(
     addHandler(writeToFile, logger="blueprint.code.logger", file=codefile,formatter=blueprint.log.formatter)
     ## Import and validate blueprint -----------------------------------------------------------
     code.time <- Sys.time()    
-    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,waves=waves) -> blueprints
+    rio::import(file=blueprint,...) %>% validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,chunks=chunks) -> blueprints
 
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'wave' and 'blueprints'
@@ -643,7 +643,7 @@ source(codefile,local=TRUE)
 ##' 
 ##' \code{"open_blue"} creates or loads blueprint-files of various file formats.
 ##' @param blueprint Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link[=rio]{import}}. See the vignette for details of the structure.
-##' @param waves Number specifying how many waves shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.
+##' @param chunks Number specifying how many chunks shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.
 ##' @return Returns nothing. It is just used for the side effect of generating or opening the specified blueprint file.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export

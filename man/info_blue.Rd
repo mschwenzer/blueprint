@@ -4,17 +4,18 @@
 \alias{info_blue}
 \title{info_blue}
 \usage{
-info_blue(blueprint = options("blueprint_file"), waves, searchstr = NULL)
+info_blue(blueprint = options()$blueprint_file, waves, searchstr = NULL,
+  which = NULL)
 }
 \arguments{
 \item{blueprint}{The Blueprint file.}
 
-\item{waves}{The wave to inform about. By now only numeric vector of length 1 accepted.}
+\item{waves}{The wave to inform about. If length(waves)>1 the search will be vectorized over all waves. Only if length(waves)=1 the data is actually returned}
 
 \item{search}{An optional pattern to search for in the labels.}
 }
 \value{
-Information
+Returns the according file invisible. If you assign it or pipe it, it can be reused.
 }
 \description{
 \code{info_blue}

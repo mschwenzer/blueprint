@@ -3,18 +3,29 @@
 ##' Inform about a blueprint
 ##' @title info_blue
 ##' @param blueprint The Blueprint file.
-##' @param waves The wave to inform about. By now only numeric vector of length 1 accepted. 
+##' @param chunks The chunk to inform about like shown in a blueprint. If length(chunks)>1 the search will be vectorized over all chunks. Only if length(chunks)=1 the data is actually returned
 ##' @param search An optional pattern to search for in the labels.
-##' @return Information
+##' @return Returns the according file invisible. If you assign it or pipe it, it can be reused.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
 ##' @importFrom stringr str_detect
 ##' @importFrom dplyr %>%
 info_blue  <- function(blueprint=options()$'blueprint_file',
-                      waves,
-                       searchstr=NULL){
-    import(blueprint)  -> blueprint
-    names(blueprint)  %>% str_detect('file') %>% which %>% .[waves] -> thecol
+                       chunks,
+                       searchstr=NULL,
+                       which=NULL){
+    if(length(chunks)>1)
+    {
+        chunks %>% llply(function(wav){
+            cat(paste0('--------------------------------------------------------------------------------\nwave: ',wav,'\n--------------------------------------------------------------------------------\n\n'))
+
+            info_blue(chunks=wav,searchstr=searchstr,which=which)
+        NULL})
+        return()
+    }
+    if(is.null(which)){1 -> which}
+    import(blueprint,which=which)  -> blueprint
+    names(blueprint)  %>% str_detect('file') %>% base::which(.) %>% .[chunks] -> thecol
     blueprint[,thecol] %>% na.omit %>% .[1]  -> file
     cat(file,':\nOriginal Varnames:\n\n')
     file %>% import -> file
@@ -24,7 +35,7 @@ info_blue  <- function(blueprint=options()$'blueprint_file',
     NULL -> rownames(adf)
     if(is.character(searchstr))
     {
-        adf[,'Label'] %>% str_detect(searchstr %>% ignore.case) %>% which  -> matches
+        adf[,'Label'] %>% str_detect(searchstr %>% regex(ignore_case=1)) %>% base::which(.)  -> matches
         adf[matches,] %>% as.matrix %>% stargazer(type='text')
     }
     else

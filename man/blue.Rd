@@ -4,18 +4,17 @@
 \alias{blue}
 \title{\code{blue} - Read a blueprint file and return a merged data frame.}
 \usage{
-blue(blueprint = options("blueprint_file"), fun = TRUE,
-  export.file = NULL, waves = NULL, logfile = FALSE, data.table = TRUE,
-  ...)
+blue(blueprint = options()$blueprint_file, fun = TRUE, export_file = NULL,
+  chunks = NULL, logfile = FALSE, data.table = TRUE, ...)
 }
 \arguments{
 \item{blueprint}{A meta-data file that contains specifications what to do. The file format is taken from the suffix as defined in the \code{\link[=rio]{import}} function. See the vignette for details of the structure of a blueprint.}
 
 \item{fun}{Logical vector wheter the functions from \code{fun} should be applied on the specified variables.}
 
-\item{export.file}{Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.}
+\item{export_file}{Path to file the data is written after merging. The suffix determines the file type. In addition the data.frame is returned \code{\link{invisible}}. Note that if you choose to export to stata you have to choose final variable names (column newvar) that comply with the stata convention of stata names. You must use no dots (.) and length of a variable name may not excede a maximum number of 26? characters.}
 
-\item{waves}{A numeric vector specifying the waves that shall be included from the blueprint file. If NULL every wave will be merged.}
+\item{chunks}{A numeric vector specifying the chunks that shall be included from the blueprint file. If NULL every wave will be merged.}
 
 \item{logfile}{Either a logfile wheter to use an extended logfile. Or path where this extended logfile is written. The extended logfile will contain descriptive statistics and allow for inference to possible problems when transforming data. However the computation of descriptive statistics will take extra time which is why this argument is set to FALSE by default.}
 
