@@ -3,8 +3,8 @@
 ##' Inform about a blueprint
 ##' @title info_blue
 ##' @param blueprint The Blueprint file.
-##' @param chunks The chunk to inform about like shown in a blueprint. If length(chunks)>1 the search will be vectorized over all chunks. Only if length(chunks)=1 the data is actually returned
-##' @param search An optional pattern to search for in the labels.
+##' @param chunks Numeric vector specifying the chunk(s) to inform about like shown in a blueprint file. If length(chunks)>1 the search will be vectorized over all chunks. Only if length(chunks)=1 the data is actually returned.
+##' @param search An optional pattern to search for in the attribute labels of data.frame. Can be used to search through variable description if this attributes exist (they are by default imported when e.g. using Stata or SPSS file.
 ##' @return Returns the according file invisible. If you assign it or pipe it, it can be reused.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export

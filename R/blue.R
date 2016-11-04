@@ -1,3 +1,6 @@
+
+
+
 ##' @importFrom dplyr %>%
 blueprint.check.every.specified.original.var.has.a.file  <- function(df)
 {
@@ -256,7 +259,29 @@ set.empty.values.to.NA <- function(blueprint)
     blueprint %>% mutate_all(.funs=funs(ifelse(.=='',NA,.)))
 }
 
-
+##' Return a list of a blueprint and meta.statements indicated by ^@
+##'
+##' .. content for \details{} ..
+##' @title 
+##' @param blueprint 
+##' @param varname.or.position 
+##' @return 
+##' @author Marc Schwenzer
+extract.blueprint.meta.statements <- function(blueprint,varname.or.position)
+{
+    blueprint[,varname.or.position] %>% str_detect('^@')  %>% which  -> rows.with.global.meta.statements
+    blueprint[rows.with.global.meta.statements,varname] -> meta.statements
+    # Remove @ specifyer
+    meta.statements %>% str_replace('^@','')
+    
+                                        # add left join if blue statement is found evaluated
+    meta.statements %>% str_detect('blue *\\(')   -> blue.meta.statements
+meta.statements[blue.meta.statements] <- paste0('left_join(final.df,',meta.statements[blue.meta.statements],') -> final.df')
+    meta.statements[!blue.meta.statements] <- paste0('final.df  %>% ',meta.statements[blue.meta.statements],' -> final.df')
+blueprint[-rows.with.global.meta.statements,] -> blueprint
+return(list(blueprint,meta.statements))
+    }
+    
 
 
 ## add.variables.specified.by.brackets -----------------------------------------------------------
@@ -675,7 +700,7 @@ open_blue <- function(
     }
 
 ## Local Variables:
-## ess-r-package-info: ("blueprint" . "/doc/wissenschaft/blueprint")
+## ess-r-package-info: ("blueprint" . "/doc/wissenschaft/rpackages/blueprint/")
 ## End:
 
 ##' \code{blue_example}
