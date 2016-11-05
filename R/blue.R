@@ -17,10 +17,13 @@ df.remove.non.standard.named.columns  <- function(df)
 {
     ## remove empty colums
     standard.names <- c('newvar','link','var','file','fun')
+    actual.names <- names(df)
     (names(df)%in%standard.names)  %>%  `!` %>% which  -> to.drop
     if(length(to.drop)>0){
         df[,-c(to.drop)] -> df
-        }
+        # reset the names because default they get numbers after dropping
+        actual.names[-to.drop] -> names(df)
+    }
 return(df)
     }
 
@@ -47,9 +50,9 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
         blueprint %>%
             blueprint.remove.column.rows    %>%
             ## guarantee that all columns have the correct name, especially var used for cutting
-            df.set.standard.names %>%
-            df.remove.non.standard.named.columns %>%
-            stop.if.no.var.column -> blueprint
+            df.set.standard.names   %>% 
+    df.remove.non.standard.named.columns %>% 
+    stop.if.no.var.column -> blueprint
                                         # cut blueprint into chunks
         data.frame(startcol=(names(blueprint)=='var') %>% which,
                                         # end column 
@@ -265,24 +268,31 @@ extract.blueprint.meta.statements <- function(blueprint,varname.or.position)
 {
     blueprint[,varname.or.position] %>% str_detect('^!')  %>% which  -> rows.with.meta.statements
     blueprint[rows.with.meta.statements,varname.or.position] -> meta.statements
+    if(length(rows.with.meta.statements)>0){
     # Remove @ specifyer
     meta.statements %>% str_replace('^!','') -> meta.statements
     
                                         # add left join if blue statement is found evaluated
     names(blueprint)  %>% str_detect('link')  %>% which %>% .[1] -> linkcol
-
-    blueprint[rows.with.meta.statements,linkcol] %>% str_detect('=')  -> link.condition.exists.vector
+        blueprint[rows.with.meta.statements,linkcol]  -> links
+        (links %>% str_detect(.,'=')|links %>% str_detect(.,','))  -> link.condition.exists.vector
     # fix NAs when link column is empty
 FALSE -> link.condition.exists.vector[link.condition.exists.vector %>% is.na]
                                         # TODO: validate link condition
     sapply(1:length(link.condition.exists.vector),function(x)
         {
             ifelse(link.condition.exists.vector[x],
-                   paste0('final.df  %>% left_join(',meta.statements[x],',by=c(',blueprint[rows.with.meta.statements[x],linkcol] %>% process.links,')) -> final.df\n\n'),
+                   
+                   paste0(meta.statements[x],'  ->  blueprint.to.add\nfinal.df  %>% left_join(blueprint.to.add,by=c(',blueprint[rows.with.meta.statements[x],linkcol] %>% process.links,')) -> final.df\nrm(blueprint.to.add)\n\n'),
                    paste0('final.df  %>% ',meta.statements[x],' -> final.df\n\n')
                    )
         }) -> meta.statements
-blueprint[-rows.with.meta.statements,] -> blueprint
+    blueprint[-c(rows.with.meta.statements),] -> blueprint
+    }
+    else
+    {
+        meta.statements=''
+    }
 return(list(blueprint=blueprint,meta.statements=meta.statements))
     }
     
@@ -302,7 +312,7 @@ add.variables.specified.by.brackets <- function(blueprint)
     ((blueprint[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
     >0))
     {
-        rowid <- ((blueprint[,'newvar']) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
+        rowid <- ((blueprint[,'newvar']) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which %>% .[1])
         if((rowid-1)>0){
             frame.before <- blueprint[1:(rowid-1),]
         }
@@ -352,9 +362,15 @@ return.not.existing.files <- function(blueprint)
 blueprint.remove.column.rows <- function(blueprint)
 {
     ## Remove comment rows -----------------------------------------------------------
-    llply(blueprint[,1],function(x){str_detect(x,'^ *#')})  %>% unlist %>% `!`  %>% which-> not.commentrows
-    if(length(not.commentrows)>0){
-        blueprint[not.commentrows,] -> blueprint
+                                        # Remove empty,NA or blank rows
+    (
+        is.na(blueprint[,1])|
+        is.nan(blueprint[,1])|
+        blueprint[,1] %>% str_detect('^ *$')|
+        blueprint[,1] %>% str_detect('^ *#')
+    )  %>% `!` %>% which -> not.column.rows
+    if(length(not.column.rows)>0){
+        blueprint[not.column.rows,] -> blueprint
     }
     return(blueprint)
 }
@@ -500,7 +516,12 @@ blue <- function(
     
     ## Logfile -----------------------------------------------------------
     ## Make default logfile path if missing logfile
-    # Will be removed when alpha
+                                        # Will be removed when alpha
+    dots <- list(...)
+    ifelse(
+        names(dots) %>% str_detect('^w*') %>% which  %>% `>`(0),
+            paste0('.',dots[         names(dots) %>% str_detect('^w*')  %>% which %>%  .[1]  ]),
+        '') -> whichspecifier
     if(is.character(logfile)){extended=TRUE}
     if(is.logical(logfile)){
         if(logfile)
@@ -511,21 +532,18 @@ blue <- function(
         {
         extended=FALSE            
         }
-
-
-                               str_replace(blueprint,'\\.....+$',) -> logfile
-                               rm(logspecifier)
+        str_replace(blueprint,'\\.....+$',paste0('.blueprint',whichspecifier,'.log.txt')) -> logfile
     }
     logfile %>% normalised.path.and.dir.exists -> logfile
     if(logfile==blueprint)
     {stop('You have to specify a path to a logfile since automatic replacement of the suffix was not possible. Try to set a logfile path argument or change it.')}
     if(file.exists(logfile)){unlink(logfile)}    
     addHandler(writeToFile, logger="blueprint.logger", file=logfile,formatter=blueprint.log.formatter)    
-    start.message <- paste0('- Parsing blueprint file `',blueprint,'`.','\n- Logging to file `',logfile,'`.\n')
+    start.message <- paste0('- Parsing blueprint file `',blueprint,'` (which: ',whichspecifier %>% str_replace('\\.',''),').','\n- Logging to file `',logfile,'`.\n')
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
-    str_replace(blueprint,'\\.....+$','.blueprint.code.R') -> codefile
+    str_replace(blueprint,'\\.....+$',paste0('.blueprint',whichspecifier,'.code.R')) -> codefile
 
                                         # !!! check for path consistency
     if(file.exists(codefile)){unlink(codefile)}
@@ -536,7 +554,6 @@ blue <- function(
     rio::import(file=blueprint,...) %>% extract.blueprint.meta.statements(1)  -> blueprints
     blueprints$meta.statements -> global.meta.statements
     blueprints$blueprint %>%  validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,chunks=chunks) -> blueprints
-
     rm(blueprint)    
                                         # blueprints: a data.frame with columns 'chunk' and 'blueprints'
     ## Convert blueprints to code -----------------------------------------------------------
