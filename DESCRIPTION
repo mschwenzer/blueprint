@@ -15,5 +15,5 @@ URL: https://github.com/mschwenzer/blueprint
 BugReports: https://github.com/mschwenzer/blueprint/issues
 VignetteBuilder: knitr
 Suggests: testthat, knitr, rmarkdown, tibble, xtable
-Imports: plyr, dplyr, data.table, logging, rio, stargazer, stringr
+Imports: plyr, dplyr, data.table, logging, rio, stargazer, stringr, R.cache, magrittr
 RoxygenNote: 5.0.1

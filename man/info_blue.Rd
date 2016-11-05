@@ -4,8 +4,8 @@
 \alias{info_blue}
 \title{info_blue}
 \usage{
-info_blue(blueprint = options()$blueprint_file, chunks, searchstr = NULL,
-  which = NULL)
+info_blue(blueprint = options()$blueprint_file, chunks = NULL,
+  searchstr = NULL, which = NULL)
 }
 \arguments{
 \item{blueprint}{The Blueprint file.}

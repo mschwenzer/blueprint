@@ -246,7 +246,19 @@ It might be convenient define a blueprint file that is used as default. Most fun
 set_blue('/path/to/blueprint.file.xlsx')
 ```
 
+# Searching through variable labels in attributes
+```
+info_blue('  searchstr='REGEX')
+case.insensitive by default
+How to implement complex searches:
+|-------------+-----------------------------+------|
+| Logical OR  | "dog                        | cat" |
+| Logical AND | "(?=.*trust)(?=.*neighbor)" |      |
 
+```
+
+## Caching
+When the blueprint is not changed, a cache file is used. This is saved in the current directory in the directory bluepring_cache: 
 
 
 

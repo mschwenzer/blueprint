@@ -9,40 +9,57 @@
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
 ##' @importFrom stringr str_detect
+##' @importFrom stringr regex
+##' @importFrom R.cache evalWithMemoization
+##' @importFrom R.cache setCacheRootPath
 ##' @importFrom dplyr %>%
 info_blue  <- function(blueprint=options()$'blueprint_file',
-                       chunks,
+                       chunks=NULL,
                        searchstr=NULL,
                        which=NULL){
-    if(length(chunks)>1)
-    {
-        chunks %>% llply(function(wav){
-            cat(paste0('--------------------------------------------------------------------------------\nchunk: ',wav,'\n--------------------------------------------------------------------------------\n\n'))
-
-            info_blue(chunks=wav,searchstr=searchstr,which=which)
-        NULL})
-        return()
-    }
     if(is.null(which)){1 -> which}
+setCacheRootPath(paste0(getwd(),'/blueprint_cache_dir'))
+evalWithMemoization(
+        {
     import(blueprint,which=which)  -> blueprint
-    names(blueprint)  %>% str_detect('file') %>% base::which(.) %>% .[chunks] -> thecol
-    blueprint[,thecol] %>% na.omit %>% .[1]  -> file
-    cat(file,':\nOriginal Varnames:\n\n')
-    file %>% import -> file
-    file %>% names  -> varnams
-    file %>% llply(function(x){attributes(x) %>% .$label})  %>% unlist  -> varlabs
-    data.frame('Varname'=varnams,'Label'=varlabs)  -> adf
-    NULL -> rownames(adf)
-    if(is.character(searchstr))
-    {
-        adf[,'Label'] %>% str_detect(searchstr %>% regex(ignore_case=1)) %>% base::which(.)  -> matches
-        adf[matches,] %>% as.matrix %>% stargazer(type='text')
+    names(blueprint)  %>% str_detect('file') %>% base::which(.)  -> thecol
+    if(!is.null(chunks)){
+        thecol %>% .[chunks] -> thecol
     }
     else
-    {
-        adf %>% as.matrix %>% stargazer(type='text')
-        }
-    invisible(file)
-}
-
+            {
+                chunks=(1:length(thecol))
+                }
+    cat('\nSearching blueprint files...\n\n')
     
+    data.frame(chunk=chunks,col=thecol) %>% group_by(chunk) %>% do(file={blueprint[,.$col] %>% na.omit %>% unique}) %>%  unnest(file) -> fileframe
+    fileframe %>% group_by(chunk) %>% do(
+                                          file=.$file,
+                                          searchresults={
+    .$file %>% import -> data
+    data %>% names  -> varnams
+    data %>% llply(function(x){attributes(x) %>% .$label})  %>% unlist  -> varlabs
+                                              data.frame('Varname'=varnams,'Label'=varlabs)  -> adf
+    adf})   -> adf
+    }
+    )
+                                        #        %>% ungroup %>% unnest(file) %>% unnest(searchresults) -> a
+    adf %>% unnest(file)  %>% group_by(chunk) %>% do(searchresults={
+                   .$searchresults[[1]] ->  adf
+        if(is.character(searchstr))
+            {
+adf %>% filter(str_detect(Label,searchstr %>% regex(ignore_case=1))) -> adf
+            }
+adf
+    },
+file=.$file)%>% unnest(file) %>% unnest(searchresults) %>% select(chunk,Label,Varname,file)  -> a
+    if(nrow(a)>0){
+        cat(paste0('\n--------------------------------------------------------------------------------\nMatches of `',searchstr,'` in blueprint data files:\n\n'))        
+        a %>% as.matrix %>% stargazer(type='text')
+        
+    }
+    else{
+        cat('\nNo matches of `',searchstr,'` in blueprint data files.')
+        }
+    invisible(a)
+}

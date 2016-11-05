@@ -501,6 +501,7 @@ blueprint.chunk.validator <- function(blueprint)
 ##' @importFrom stringr str_detect
 ##' @importFrom stringr str_split
 ##' @importFrom rio export
+##' @importFrom magrittr %T>%
 ##' @importFrom dplyr %>%
 blue <- function(
                  blueprint=options()$'blueprint_file',

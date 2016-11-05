@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2016-11-04" />
+<meta name="date" content="2016-11-05" />
 
 <title>Introduction to blueprint</title>
 
@@ -116,7 +116,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Introduction to blueprint</h1>
-<h4 class="date"><em>2016-11-04</em></h4>
+<h4 class="date"><em>2016-11-05</em></h4>
 
 </div>
 
@@ -471,9 +471,25 @@ open_blue('blueprint_example/example_blueprint2.xlsx')</code></pre>
 <p>Reseach often involves building a data.frame that is expanded and refined as the research questions become more complicated. This means that you likely will rely one one or few blueprint files that you build up to more complex specifications from the scratch. ## Settin a default blueprint file: set_blue() It might be convenient define a blueprint file that is used as default. Most functions of blueprint that expect a path to a blueprint file look if a default option is set. This option can easily be set with the convenience function set_blue:</p>
 <pre><code>set_blue('/path/to/blueprint.file.xlsx')</code></pre>
 </div>
+<div id="searching-through-variable-labels-in-attributes" class="section level1">
+<h1>Searching through variable labels in attributes</h1>
+<pre><code>info_blue('  searchstr='REGEX')
+case.insensitive by default
+How to implement complex searches:
+|-------------+-----------------------------+------|
+| Logical OR  | &quot;dog                        | cat&quot; |
+| Logical AND | &quot;(?=.*trust)(?=.*neighbor)&quot; |      |
+</code></pre>
+<div id="caching" class="section level2">
+<h2>Caching</h2>
+<p>When the blueprint is not changed, a cache file is used. This is saved in the current directory in the directory bluepring_cache:</p>
+</div>
+</div>
 <div id="aggregation-of-data" class="section level1">
 <h1>Aggregation of data</h1>
-<p>Will follow.</p>
+<p>Entries in the newvar column that start with a ! are extracted. They are executed /after/ the whole data.frame is merged. They can be used to easily select subsets or aggregated versions of the data. In general ! &lt;…ANYFUNCTION…&gt; will be evaluated as:</p>
+<pre><code>final.df  %&gt;% ...ANY FUNCTION... -&gt; final.df</code></pre>
+<p>There is one exception that allows for easily combining blueprints: If a !-statement is followed by an entry in the link column. It is treated as a left_join e.g. blue(‘/path.to/blue.printfile.xlsx’) it will be left_joined (meaning that this</p>
 </div>
 
 
