@@ -59,7 +59,7 @@ file=.$file)%>% unnest(file) %>% unnest(searchresults) %>% select(chunk,Label,Va
         
     }
     else{
-        cat('\nNo matches of `',searchstr,'` in blueprint data files.')
+        cat('\nNo matches of `',searchstr,'` in blueprint data files.\n\n')
         }
     invisible(a)
 }
