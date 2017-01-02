@@ -5,7 +5,7 @@
 \title{info_blue}
 \usage{
 info_blue(blueprint = options()$blueprint_file, chunks = NULL,
-  searchstr = NULL, which = NULL)
+  searchstr = NULL, force = FALSE, ...)
 }
 \arguments{
 \item{blueprint}{The Blueprint file.}

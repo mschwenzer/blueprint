@@ -4,6 +4,9 @@
 ##' @title info_blue
 ##' @param blueprint The Blueprint file.
 ##' @param chunks Numeric vector specifying the chunk(s) to inform about like shown in a blueprint file. If length(chunks)>1 the search will be vectorized over all chunks. Only if length(chunks)=1 the data is actually returned.
+##' @param searchstr The string to search for
+##' @param force If TRUE cache file is rebuild. Defaults to FALSE
+##' @param ... 
 ##' @param search An optional pattern to search for in the attribute labels of data.frame. Can be used to search through variable description if this attributes exist (they are by default imported when e.g. using Stata or SPSS file.
 ##' @return Returns the according file invisible. If you assign it or pipe it, it can be reused.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
@@ -16,12 +19,13 @@
 info_blue  <- function(blueprint=options()$'blueprint_file',
                        chunks=NULL,
                        searchstr=NULL,
-                       which=NULL){
+                       force=FALSE,
+                       ...){
     if(is.null(which)){1 -> which}
 setCacheRootPath(paste0(getwd(),'/blueprint_cache_dir'))
 evalWithMemoization(
         {
-    import(blueprint,which=which)  -> blueprint
+    import(file=blueprint,...)  -> blueprint
     names(blueprint)  %>% str_detect('file') %>% base::which(.)  -> thecol
     if(!is.null(chunks)){
         thecol %>% .[chunks] -> thecol
@@ -41,7 +45,8 @@ evalWithMemoization(
     data %>% llply(function(x){attributes(x) %>% .$label})  %>% unlist  -> varlabs
                                               data.frame('Varname'=varnams,'Label'=varlabs)  -> adf
     adf})   -> adf
-    }
+        },
+    force=force
     )
                                         #        %>% ungroup %>% unnest(file) %>% unnest(searchresults) -> a
     adf %>% unnest(file)  %>% group_by(chunk) %>% do(searchresults={

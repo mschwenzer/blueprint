@@ -9,6 +9,9 @@ set_blue(blueprint)
 \arguments{
 \item{blueprint}{}
 }
+\value{
+NA
+}
 \description{
 set_blue()
 }
