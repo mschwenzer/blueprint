@@ -12,6 +12,12 @@ info_blue(blueprint = options()$blueprint_file, chunks = NULL,
 
 \item{chunks}{Numeric vector specifying the chunk(s) to inform about like shown in a blueprint file. If length(chunks)>1 the search will be vectorized over all chunks. Only if length(chunks)=1 the data is actually returned.}
 
+\item{searchstr}{The string to search for}
+
+\item{force}{If TRUE cache file is rebuild. Defaults to FALSE}
+
+\item{...}{}
+
 \item{search}{An optional pattern to search for in the attribute labels of data.frame. Can be used to search through variable description if this attributes exist (they are by default imported when e.g. using Stata or SPSS file.}
 }
 \value{

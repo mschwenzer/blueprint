@@ -25,43 +25,53 @@ info_blue  <- function(blueprint=options()$'blueprint_file',
 setCacheRootPath(paste0(getwd(),'/blueprint_cache_dir'))
 evalWithMemoization(
         {
-    import(file=blueprint,...)  -> blueprint
-    names(blueprint)  %>% str_detect('file') %>% base::which(.)  -> thecol
-    if(!is.null(chunks)){
-        thecol %>% .[chunks] -> thecol
-    }
-    else
-            {
-                chunks=(1:length(thecol))
-                }
-    cat('\nSearching blueprint files...\n\n')
-    
-    data.frame(chunk=chunks,col=thecol) %>% group_by(chunk) %>% do(file={blueprint[,.$col] %>% na.omit %>% unique}) %>%  unnest(file) -> fileframe
-    fileframe %>% group_by(chunk) %>% do(
-                                          file=.$file,
-                                          searchresults={
-    .$file %>% import -> data
-    data %>% names  -> varnams
-    data %>% llply(function(x){attributes(x) %>% .$label})  %>% unlist  -> varlabs
-                                              data.frame('Varname'=varnams,'Label'=varlabs)  -> adf
-    adf})   -> adf
+            rio::import(file=blueprint,...)  %>% extract.blueprint.meta.statements(1) -> blueprints
+            blueprints$blueprint %>%  validate.blueprint.file.and.return.list.of.valid.blueprints(blueprint=.,chunks=chunks) -> blueprint
+
+            if(!is.null(chunks)){
+                blueprint %>% filter(chunk%in%chunks) -> blueprint
+            }
+            cat('\nSearching blueprint files...\n\n')
+            blueprint %>% unnest(blueprints)  %>%  select(chunk,file) %>% filter(!is.na(file),!(duplicated(file)))  -> fileframe
+#            print(fileframe)
+            fileframe %>% rowwise %>% do(                chunk=.$chunk,
+                                         file=.$file,
+                                         searchresults={
+                                             .$chunk  -> chunk
+                                             .$file  -> file                                             
+                                             file %>% import -> data
+
+                                             data %>% names  -> varnams
+                                             data %>% llply(function(x){attributes(x) %>% .$label})  %>% unlist  -> varlabs
+                                             if(is.null(varlabs))
+                                             {
+                                                 data.frame(chunk=chunk,'Varname'=varnams,'Label'=rep(NA,length(varnams)),file=file) -> adf}
+                                             else 
+                                             {
+                                                 data.frame(chunk=chunk,'Varname'=varnams,'Label'=varlabs,file=file)  -> adf
+                                             }
+                                             adf}
+                                         )  %>% unnest(searchresults) -> adf
         },
     force=force
-    )
+)
                                         #        %>% ungroup %>% unnest(file) %>% unnest(searchresults) -> a
-    adf %>% unnest(file)  %>% group_by(chunk) %>% do(searchresults={
-                   .$searchresults[[1]] ->  adf
+
         if(is.character(searchstr))
-            {
-adf %>% filter(str_detect(Label,searchstr %>% regex(ignore_case=1))) -> adf
+        {
+            ((str_detect(adf$Label,searchstr %>% regex(ignore_case=1)))|(str_detect(adf$Varname,searchstr %>% regex(ignore_case=1)))) -> matches
+            matches[matches %>% is.na] <- FALSE
+#                        print(matches)
+adf %>% filter(matches) -> a
             }
-adf
-    },
-file=.$file)%>% unnest(file) %>% unnest(searchresults) %>% select(chunk,Label,Varname,file)  -> a
+        else{
+                adf  -> a
+                }
+
     if(nrow(a)>0){
-        cat(paste0('\n--------------------------------------------------------------------------------\nMatches of `',searchstr,'` in blueprint data files:\n\n'))        
-        a %>% as.matrix %>% stargazer(type='text')
-        
+        cat(paste0('\n--------------------------------------------------------------------------------\nMatches of `',searchstr,'` in blueprint data files:\n\n'))
+        a  %>% as.matrix -> a
+        (a %>% stargazer(type='text'))
     }
     else{
         cat('\nNo matches of `',searchstr,'` in blueprint data files.\n\n')
