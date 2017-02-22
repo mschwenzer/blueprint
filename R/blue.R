@@ -35,7 +35,7 @@ stop.if.no.var.column <- function(df)
 
 
 
-        
+
 
 ##' @importFrom dplyr transmute
 ##' @importFrom dplyr filter
@@ -114,7 +114,7 @@ if(extended)
     class(variable) -> new.type
     if(extended){
     data.frame(old=kept.levels.of.variable,`. `=rep('|',length(kept.levels.of.variable)),`.  `=rep('v',length(kept.levels.of.variable)),new=variable[old.pos],`(n)`=old.count) %>% dplyr::arrange(old)  ->     printfr
-    
+
 capture.output(    printfr %>% as.matrix %>% t %>% stargazer::stargazer(type='text')  %>% paste0(.,'\n') %>% blueprint.log,file=NULL)  -> bla}
                             if(new.type!=old.type){
                                 blueprint.log(paste0('!!! Type conversion from ',old.type,' to ',new.type,'. Was this intended?'))
@@ -306,6 +306,7 @@ add.variables.specified.by.brackets <- function(blueprint)
     rowstoprocess <- blueprint[,1]
     blueprint %>% names -> column.names
     while(length(
+        # Find ocurences of interval syntax [1:9]
     ((blueprint[,1]) %>% str_detect('\\[[0-9]*:[0-9]*\\]') %>% which)
     >0))
     {
@@ -320,14 +321,18 @@ add.variables.specified.by.brackets <- function(blueprint)
         to.process.vars <- blueprint[rowid,]
         ## !!! to change
         pattern <- regmatches(to.process.vars[,1],regexpr('\\[[0-9]*:[0-9]*\\]',to.process.vars[,1]))
+        # parse interval -> numberic()
         nums <- eval(parse(
             text=(pattern %>% str_replace_all('\\[','') %>% str_replace_all('\\]',''))
         )
         )
+        # escape pattern
         pattern %>% str_replace_all('\\[','\\\\[') %>% str_replace_all('\\]','\\\\]')  -> pattern
+        
         frame.toadd <- ldply(nums,
-                                   function(x){
-                                       to.process.vars %>% str_replace_all(pattern,x)
+                             function(x){
+
+                                       to.process.vars %>% str_replace_all(pattern,x %>% as.character)
                                    })
         names(frame.toadd) <- column.names
         assign('blueprint',rbind(if((rowid-1)>0){frame.before},frame.toadd,              if((rowid+1)<(nrow(blueprint)+1)){frame.after}),-1)
@@ -472,8 +477,8 @@ blueprint.chunk.validator <- function(blueprint)
 {
     blueprint %>%
         blueprint.check.for.duplicate.variable.names %>%
-        blueprint.check.every.specified.original.var.has.a.file %>%         
-        blueprint.check.for.missing.files  -> blueprint
+        blueprint.check.for.missing.files  %>% 
+        blueprint.check.every.specified.original.var.has.a.file  -> blueprint
     return(blueprint)
 }
 
@@ -692,12 +697,12 @@ source(codefile,local=TRUE)
 
 
 
-##' open_blue creates or loads blueprint-file .
+##' open_blue creates or loads blueprint-files.
 ##' 
 ##' \code{"open_blue"} creates or loads blueprint-files of various file formats.
 ##' @param blueprint Path to blueprint (meta-data file) that contains specifications about the variables in data files that will be merged. The file format of data is taken from the suffix as defined in the \code{\link[=rio]{import}}. See the vignette for details of the structure.
-##' @param chunks Number specifying how many chunks shall be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.
-##' @return Returns nothing. It is just used for the side effect of generating or opening the specified blueprint file.
+##' @param chunks Number specifying the chunks to be included in the new blueprint file. This can be changed later manually by adding appropriate named columns.
+##' @return Nothing. Just used for the side effect of generating or opening the specified blueprint file.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
 ##' @examples \dontrun{open_blue('/path/to/file.xlsx')}
@@ -748,8 +753,8 @@ blue_example <- function()
     INT_STU12_DEC03_synth  %>% export('blueprint_example/INT_STU12_DEC03_synth.sav')
     INT_SCQ12_DEC03_synth  %>% export('blueprint_example/INT_SCQ12_DEC03_synth.sav')
     example_blueprint1 %>% export('blueprint_example/example_blueprint1.xlsx')
-    example_blueprint1 %>% export('blueprint_example/example_blueprint1.csv')    
+    example_blueprint1 %>% export('blueprint_example/example_blueprint1.csv')
     example_blueprint2 %>% export('blueprint_example/example_blueprint2.xlsx')
     example_blueprint2 %>% export('blueprint_example/example_blueprint2.csv')
     invisible(NULL)
-}    
+}
