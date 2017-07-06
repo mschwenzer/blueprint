@@ -1,0 +1,14 @@
+##' Help function to split a df into two disjunct dfs
+##'
+##' select_spl splits a data.frame into two, one containing some specified variables and one not containing some variables. Like dplyr::select it returns the df with matching columns but additionally writes the other non-matching columns to a object in the calling environment. This is a potentially destructive function for its sideeffect of creating other.df.
+##' @title select_spl
+##' @param df A data.frame to split
+##' @param vars a string of variables conform with select_.
+##' @param other.df Name of a newly created df with the variables not matching.
+##' @return df 
+##' @author Marc Schwenzer
+select_spl <- function(df,vars,df1='other.df'){
+    e<- parent.env(environment())
+    df %>% select_(.dots=vars) %>% assign(df1,.,envir=e)
+    df %>% select_(.dots=vars %>% stringr::str_replace('^','-')) %>% assign(df2,.,envir=e)
+}
