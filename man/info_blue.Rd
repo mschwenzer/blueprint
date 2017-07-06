@@ -32,4 +32,3 @@ Inform about a blueprint
 \author{
 Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 }
-

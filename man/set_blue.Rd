@@ -21,4 +21,3 @@ Easily set a default blueprint file. This is taken into account by blue(), blue_
 \author{
 Marc Schwenzer
 }
-

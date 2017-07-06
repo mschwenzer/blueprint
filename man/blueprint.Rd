@@ -17,4 +17,3 @@ Have a look at the vignette:
 
 \code{browseVignettes(package = "blueprint")}
 }
-

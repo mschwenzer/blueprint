@@ -31,4 +31,3 @@ Use a blueprint-file to import a subset of variables from several data files, op
 \author{
 Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 }
-

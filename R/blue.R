@@ -568,8 +568,9 @@ blue <- function(
     blueprint.code.log(return.diff.code())
     blueprint.code.log(paste0('progress_estimated(',nrow(blueprints),') -> p'))
     blueprints %>% dplyr::do(dfs={
-        blueprint <- .$blueprints
-        chunk <- .$chunk
+        (.) -> df_in
+        blueprint <- df_in$blueprints
+        chunk <- df_in$chunk
         blueprint.code.log(paste0('### chunk ',chunk))
         blueprint.code.log('\nprint(p$tick()$print())\n')
         
@@ -657,7 +658,7 @@ blue <- function(
             }
         code.to.execute %>% paste0(.,'\nrm(',df.chunk.name,')') -> code.to.execute
         blueprint.code.log(code.to.execute)
-        return(df.chunk.name)
+df.chunk.name
     }) -> blueprints.data
 
     blueprints.data$dfs  %>% unlist  -> dfs

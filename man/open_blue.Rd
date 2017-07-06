@@ -23,4 +23,3 @@ Nothing. Just used for the side effect of generating or opening the specified bl
 \author{
 Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 }
-

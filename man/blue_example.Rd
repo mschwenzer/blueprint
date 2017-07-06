@@ -12,4 +12,3 @@ This folder will be named 'blueprint_example' and contains the example files 'IN
 \author{
 Marc Schwenzer
 }
-

@@ -18,4 +18,3 @@ Run over attributes and try to create a vector.
 \author{
 Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 }
-
