@@ -32,7 +32,7 @@ evalWithMemoization(
                 blueprint %>% filter(chunk%in%chunks) -> blueprint
             }
             cat('\nSearching blueprint files...\n\n')
-            blueprint %>% unnest(blueprints)  %>%  select(chunk,file) %>% filter(!is.na(file),!(duplicated(file)))  -> fileframe
+            blueprint %>% ungroup %>% unnest(blueprints)  %>%  select(chunk,file) %>% filter(!is.na(file),!(duplicated(file)))  -> fileframe
 #            print(fileframe)
             fileframe %>% rowwise %>% do(                chunk=.$chunk,
                                          file=.$file,
@@ -51,7 +51,8 @@ evalWithMemoization(
                                                  data.frame(chunk=chunk,'Varname'=varnams,'Label'=varlabs,file=file)  -> adf
                                              }
                                              adf}
-                                         )  %>% unnest(searchresults) -> adf
+                                         ) -> test
+            test %>% ungroup %>% unnest(searchresults) -> adf
         },
     force=force
 )
