@@ -17,8 +17,6 @@ info_blue(blueprint = options()$blueprint_file, chunks = NULL,
 \item{force}{If TRUE cache file is rebuild. Defaults to FALSE}
 
 \item{...}{}
-
-\item{search}{An optional pattern to search for in the attribute labels of data.frame. Can be used to search through variable description if this attributes exist (they are by default imported when e.g. using Stata or SPSS file.}
 }
 \value{
 Returns the according file invisible. If you assign it or pipe it, it can be reused.

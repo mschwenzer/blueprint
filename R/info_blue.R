@@ -7,7 +7,6 @@
 ##' @param searchstr The string to search for
 ##' @param force If TRUE cache file is rebuild. Defaults to FALSE
 ##' @param ... 
-##' @param search An optional pattern to search for in the attribute labels of data.frame. Can be used to search through variable description if this attributes exist (they are by default imported when e.g. using Stata or SPSS file.
 ##' @return Returns the according file invisible. If you assign it or pipe it, it can be reused.
 ##' @author Marc Schwenzer <m.schwenzer@uni-tuebingen.de>
 ##' @export
@@ -54,6 +53,7 @@ evalWithMemoization(
                                          ) -> test
             test %>% ungroup %>% unnest(searchresults) -> adf
         },
+    key=c(blueprint,which),
     force=force
 )
                                         #        %>% ungroup %>% unnest(file) %>% unnest(searchresults) -> a
