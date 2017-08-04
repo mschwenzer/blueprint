@@ -15,6 +15,9 @@ validate_var(data, var, min = NA, max = NA)
 
 \item{max}{Upper limit, values above are counted}
 }
+\value{
+a data.frame with summary.
+}
 \description{
 Compute statistics over a variable in a data.frame.
 }

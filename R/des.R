@@ -26,6 +26,7 @@ des<- function(df,...,hist=FALSE,tab=FALSE){
 ##' @param x 
 ##' @return df
 ##' @author Marc Schwenzer
+##' @importFrom dplyr %>%
 ##' @export
 hist.des <- function(x,n=10,...)
 {
@@ -56,6 +57,7 @@ hist.des <- function(x,n=10,...)
 ##' @return df
 ##' @author Marc Schwenzer
 ##' @export
+##' @importFrom dplyr select_
 print.des<- function(x,...)
 {
                                         # print histogram part meaning plotting it
@@ -73,7 +75,23 @@ print.des<- function(x,...)
 cat('\nUse his on object to get histogram and tab to get the table stats.\n')
 }
 
-
+##' des.data.frame
+##'
+##' des.data.frame
+##' @title des.data.frame
+##' @param x 
+##' @param hist 
+##' @param tab 
+##' @return data.frame with statistics in column.
+##' @author Marc Schwenzer
+##' @importFrom dplyr select
+##' @importFrom purrr map_df
+##' @importFrom dplyr do
+##' @importFrom tidyr unnest
+##' @importFrom dplyr ungroup
+##' @importFrom dplyr one_of
+##' @importFrom dplyr group_vars
+##' @importFrom dplyr %>%
 des.data.frame <- function(x,hist='',tab)
 {
                                         # numeric variables
@@ -96,25 +114,38 @@ des.data.frame <- function(x,hist='',tab)
     }
 
 
-
+##' des.atomic
+##'
+##' Wrapper to deal with atomic values by encapsulating values into a data.frame.
+##' @title des.atomic
+##' @param x 
+##' @return a data.frame
+##' @author Marc Schwenzer
+##' @importFrom dplyr %>%
 des.atomic <- function(x)
 {
 paste0('data.frame(',substitute(x),'=x)') %>% parse(text=.) %>% eval %>% des.data.frame
     }
 
 
-##' .. content for \description{} (no empty lines) ..
+##' numeric.descriptives
 ##'
-##' .. content for \details{} ..
-##' @title 
+##' compute numeric descriptives. Acutally workhorse behind des.
+##' @title numeric.descriptives
 ##' @param df 
-##' @return 
+##' @return a data.frame row of numeric descriptives
 ##' @author Marc Schwenzer
 ##' @importFrom e1071 kurtosis
 ##' @importFrom e1071 skewness
 ##' @importFrom laeken gini
+##' @importFrom laeken weightedQuantile
 ##' @importFrom dplyr %>%
-##' @export
+##' @importFrom dplyr summarise_if
+##' @importFrom dplyr funs
+##' @importFrom Hmisc wtd.mean
+##' @importFrom TAM weighted_skewness
+##' @importFrom TAM weighted_curtosis
+##' @importFrom dplyr %>%
 numeric.descriptives<- function(df)
 {
 #    print(class(df))
@@ -164,55 +195,4 @@ else
                 }
 
 }
-
-##            if(hist){hist=
-            
-    
-##         select_if(is.numeric) -> numeric.df
-##     xo
-##         do    
-           
-    
-    
-##     x %>% group_vars  -> groupingvar
-##             x %>% do(a={(.) -> df
-##                 df %>% select_(.dots=groupingvar) %>% .[1,]  -> groupingval
-##                     seq_along(groupingvar) %>% map_chr(~{paste0(groupingvar[.x],':',groupingval[.])}) %>% paste0(collapse='|') -> groupingvars
-## df %>% select(groupingvar) %>% slice(1)
-## #            cat(paste0( (groupingvars %>% paste0(collapse=',')),': ',paste0((df %>% select_(groupingvars))[1,],collapse=','),'\n'))
-##             df %>% ungroup %>% select_(.dots=(groupingvar %>% paste0('-',.))) %>% des(groupingvars=groupingvars,maxcat=maxcat)})
-##         return()
-##     }
-
-
-## des.atomic<- 
-
-##     options('dplyr.show_progress') -> progopt
-##     options(dplyr.show_progress=FALSE)
-## eval( substitute(alist(...)))  %>%  map_chr(~deparse(.)) -> variables
-##     if(!is.data.frame(df)){
-##                                         # wenn nicht datensatz, dann gehe davon aus, dass erstes argument auch variablenname ist
-##         substitute(df)  %>% deparse %>% c(variables)  -> variables
-##         variables -> tibble_vars
-##         if(!is.null(g)){c(variables,g) -> tibble_vars}
-##         tibble_(tibble_vars) -> df
-##     }
-##     df %>% select_(.dots=c(g,variables)) -> test
-## rm(df)
-
-##     if(is.null(g)){
-##         test %>% mutate(g=1) -> test
-## #        g='g'
-##         hist=TRUE
-##         tab=TRUE
-##     }
-##     variables %>% map(~{(.) -> varname;
-##         varname %>% select_(test,.,'g') %>% mutate(varname=varname)  -> test
-## #        browser()
-##     test%>% 
-##         group_by_(.dots=c(g,'varname')) -> teste
-##                         teste[,varname] -> var
-       
-##             options(dplyr.show_progress=progopt)
-## }
 

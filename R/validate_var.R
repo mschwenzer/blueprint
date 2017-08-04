@@ -6,7 +6,7 @@
 ##' @param var The variable to analyse
 ##' @param min Lower limit, values below are counted
 ##' @param max Upper limit, values above are counted
-##' @return 
+##' @return a data.frame with summary.
 ##' @author Marc Schwenzer
 ##' @export
 ##' @importFrom dplyr summarise_
