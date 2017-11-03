@@ -671,7 +671,7 @@ df.chunk.name
     blueprint.code.log(paste0('\n',global.meta.statements,collapse=''))
 
 #    cat(paste0('\nTime taken to produce code.file: ',format(round(Sys.time()- code.time,2),unit='sec'),'\n\n'))
-    cat(paste0('\n- Starting iterations of import',ifelse(fun,', transformation',''),ifelse(extended,',',' and'),' merge',ifelse(extended,' and compution of extended stats',''),' ...'))
+    cat(paste0('\n- Starting iterations of import',ifelse(fun,', transformation',''),ifelse(extended,',',' and'),' merge',ifelse(extended,' and compution of extended stats',''),' ...\n'))
     eval.time <- Sys.time()
 source(codefile,local=TRUE)
 #source(codefile)

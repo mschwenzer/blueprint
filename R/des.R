@@ -177,7 +177,7 @@ else
 {
     df %>% summarise_all(funs('mean'=mean(.,na.rm=T) %>% round(2),
                               'median'=median(.,na.rm=T) %>% round(2),
-                              'sd'=sd(.,na.rm=TRUE)  %>% sqrt %>% round(2),                              
+                              'sd'=sd(.,na.rm=TRUE)  %>% round(2),                              
                                 'min'=min(.,na.rm=T) %>% round(2),
                               'max'=max(.,na.rm=T) %>% round(2),
                               'range'=max-min,
