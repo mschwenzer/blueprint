@@ -170,6 +170,7 @@ df %>%     summarise_if(names(.)!='weight',
                             'N'=length,
                             'valid' = sum(!is.na(.),na.rm=TRUE),
                             'NA_' = sum(is.na(.),na.rm=TRUE),
+                            'NA%' = round(NA_/N,2),
                            'Σwts'=sum(weight,na.rm=TRUE)
 ))                        
 }
@@ -189,7 +190,8 @@ else
                                 'S80/S20'=(quantile(.,.8,na.rm=TRUE)/quantile(.,.2,na.rm=TRUE)) %>% round(2),                                                              
                                 'N'=length,
                                 'valid' = sum(!is.na(.)),
-                                'NA_' = sum(is.na(.))
+                            'NA_' = sum(is.na(.)),
+                                                        'NA%' = round(NA_/N,2)
                                 )
                                 )
                 }
