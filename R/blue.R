@@ -80,7 +80,7 @@ validate.blueprint.file.and.return.list.of.valid.blueprints <- function(blueprin
 ##' @importFrom plyr llply
 ##' @importFrom stringr str_detect
 ##' @importFrom dplyr arrange
-##' @importFrom Hmisc describe.vector
+##' @importFrom Hmisc describe
 ##' @importFrom stargazer stargazer
 ##' @importFrom logging loginfo
 ##' @importFrom dplyr %>%
@@ -122,7 +122,7 @@ capture.output(    printfr %>% as.matrix %>% t %>% stargazer::stargazer(type='te
     blueprint.log('')
     blueprint.log('')    
     blueprint.log('   >>> Distribution after recoding -----\n')                            
-    capture.output(x=print(Hmisc::describe.vector(variable)),file=NULL) %>% blueprint.log
+    capture.output(x=print(Hmisc::describe(variable)),file=NULL) %>% blueprint.log
     return(variable)
 }"
 }
