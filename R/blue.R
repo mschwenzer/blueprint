@@ -218,7 +218,7 @@ process.links <- function(links)        {
 ##' @importFrom plyr llply
 ##' @importFrom stringr str_detect
 ##' @importFrom stargazer stargazer
-##' @importFrom Hmisc describe.vector
+##' @importFrom Hmisc describe
 ##' @importFrom utils capture.output
 ##' @importFrom dplyr %>%
 blueprint.variable.diff <- function(variable,funs,name='',chunk='')
@@ -247,7 +247,7 @@ blueprint.variable.diff <- function(variable,funs,name='',chunk='')
     blueprint.log('')
     blueprint.log('')    
     blueprint.log('   >>> Distribution after recoding -----\n')                            
-    capture.output(x=print(describe.vector(variable)),file=NULL) %>% blueprint.log
+    capture.output(x=print(describe(variable)),file=NULL) %>% blueprint.log
     return(variable)
 }
 
@@ -535,7 +535,7 @@ blue <- function(
         {
         extended=FALSE            
         }
-        str_replace(blueprint,'\\.....+$',paste0('.blueprint',whichspecifier,'.log.txt')) -> logfile
+        str_replace(blueprint,'\\..+$',paste0('.blueprint',whichspecifier,'.log.txt')) -> logfile
     }
     logfile %>% normalised.path.and.dir.exists -> logfile
     if(logfile==blueprint)
@@ -758,4 +758,17 @@ blue_example <- function()
     example_blueprint2 %>% export('blueprint_example/example_blueprint2.xlsx')
     example_blueprint2 %>% export('blueprint_example/example_blueprint2.csv')
     invisible(NULL)
+}
+
+
+
+
+
+##' blue_example Creates a folder with example files
+##'
+##' This folder will be named 'blueprint_example' and contains the example files 'INT_STU12_DEC03_synth.sav','INT_SCQ12_DEC03_synth.sav','example_blueprint1.xlsx','example_blueprint1.csv','example_blueprint2.xlsx','example_blueprint2.csv'.
+##' @return NULL
+##' @author Marc Schwenzer
+blue_structure <- function()
+{
 }

@@ -170,6 +170,10 @@ Entering the appropriate data will rename, transform and join the data automatic
 # Transformation of variables
 By now the column fun1 has been empty. This column offers a convenient way to transform variables (e.g. for recoding categories). The specified functions are executed with the original variable which will be automatically replaced by the result of the function. Let's say we want to recode gender from /0/ to '/Male/' and from /1/ to '/Female/'. You could do this by using recode from the dplyr package like shown in figure XXX (leaving out the first argument x (variable name) which the original variable will be inserted automatically). The result of this blueprint will be a data.frame with gender containing the values '/Male/' and '/Female/'. Note that a fun entry can be used to execute a whole chain of transformations (seperated by '%>%'). Have a look at the documentation on pipes provided by /magrittr/ how to use pipes /?magrittr::%>%/. Also note that e.g. recoding  different variables with the same coding scheme can be done by copy and paste of fields of fun1 to other rows.
 If you want to temporarily deactivate the execution of transformtions use the argument `blue(... , fun=FALSE)`.
+Note that from a program point of view the fun is executed by sending it to mutate. If you selected var `v12` and the fun `ifelse(.>0,1,0)` blueprint will compute it as:
+mutate ( newvarname = v12 %>% ifelse(.>0,1,0))
+To apply more complex operations that mutate different variables at once, you can specify (.) in the var which will send the entire data frame as input to the function in the fun column.
+If you build pipe chaining includes several more complex functions after another, you can always make use of enclosing  {...} brackets, e.g {. -> a ; dosomethinon(a) -> b ; dosomethingelse(a) ->c ; combine(b,c) -> d ; d} to keep everything working. 
 
 # 'Extended logging
 Blueprint by default creates a corresponding .R code file containing all operations necessary to merge 
@@ -236,8 +240,6 @@ blue('/path/to/blueprint.file.xlx',which='MyData')
 By giving the argument /export_file/, e.g. blue(..., export_file='/path/to/file.csv') the merged data.frame will be written directly to the file specified. In this case the data.frame will be returned /invisible/ - it can be used in other functions or pipes, but will not be printed and automatically deleted frome memory if not assigned to a new specifier.
 
 
-
-
 # Convenience functions
 Reseach often involves building a data.frame that is expanded and refined as the research questions become more complicated. This means that you likely will rely one one or few blueprint files that you build up to more complex specifications from the scratch.
 ## Settin a default blueprint file: set_blue()
@@ -251,9 +253,9 @@ set_blue('/path/to/blueprint.file.xlsx')
 info_blue('  searchstr='REGEX')
 case.insensitive by default
 How to implement complex searches:
-|-------------+-----------------------------+------|
-| Logical OR  | "dog                        | cat" |
-| Logical AND | "(?=.*trust)(?=.*neighbor)" |      |
+|-------------+-----------------------------|
+| Logical OR  | "dog \| cat"                |	
+| Logical AND | "(?=.*trust)(?=.*neighbor)" |
 
 ```
 

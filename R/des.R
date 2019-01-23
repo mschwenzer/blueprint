@@ -1,11 +1,12 @@
 ##' des
 ##'
-##' Summarise certain variables by group
+##' Summarise certain variables by group. 
 ##' @title des
-##' @param df 
-##' @param g 
+##' @param df Either a single variable or a data.frame for which descriptive sumamry statistics will be generated. If df contains a variable named `weight` this will be used to weight the data. If df is of class `grouped_df` the descripitve statistics will be generated for every group.
 ##' @param ... 
-##' @return A tbl
+##' @param hist 
+##' @param tab 
+##' @return A data.frame of class `tbl_df`.
 ##' @author Marc Schwenzer
 ##' @export
 des<- function(df,...,hist=FALSE,tab=FALSE){

@@ -7,20 +7,22 @@
 des(df, ..., hist = FALSE, tab = FALSE)
 }
 \arguments{
-\item{df}{}
+\item{df}{Either a single variable or a data.frame for which descriptive sumamry statistics will be generated. If df contains a variable named `weight` this will be used to weight the data. If df is of class `grouped_df` the descripitve statistics will be generated for every group.}
 
 \item{...}{}
 
-\item{g}{}
+\item{hist}{}
+
+\item{tab}{}
 }
 \value{
-A tbl
+A data.frame of class `tbl_df`.
 }
 \description{
 des
 }
 \details{
-Summarise certain variables by group
+Summarise certain variables by group.
 }
 \author{
 Marc Schwenzer
