@@ -546,7 +546,7 @@ blue <- function(
     cat(start.message)
     blueprint.log(Sys.time())
     blueprint.log(start.message)
-    str_replace(blueprint,'\\.....+$',paste0('.blueprint',whichspecifier,'.code.R')) -> codefile
+    str_replace(blueprint,'\\..+$',paste0('.blueprint',whichspecifier,'.code.R')) -> codefile
 
                                         # !!! check for path consistency
     if(file.exists(codefile)){unlink(codefile)}
