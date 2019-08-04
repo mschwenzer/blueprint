@@ -172,7 +172,7 @@ df %>%     summarise_if(names(.)!='weight',
                             'valid' = sum(!is.na(.),na.rm=TRUE),
                             'NA_' = sum(is.na(.),na.rm=TRUE),
                             'NA%' = round(NA_/N,2),
-                           'Σwts'=sum(weight,na.rm=TRUE)
+                           'Sumwts'=sum(weight,na.rm=TRUE)
 ))                        
 }
 else
